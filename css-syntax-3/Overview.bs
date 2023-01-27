@@ -2545,11 +2545,13 @@ Consume an at-rule</h4>
 <h4 id="consume-qualified-rule">
 Consume a qualified rule</h4>
 
-	To <dfn>consume a qualified rule</dfn>:
+	To <dfn>consume a qualified rule</dfn>,
+	given an optional |mixed with declarations| boolean
+	(defaulting to false):
 
 	Create a new qualified rule
 	with its prelude initially set to an empty [=list=],
-	and its value initially set to nothing.
+	and its block initially set to nothing.
 
 	Repeatedly consume the <a>next input token</a>:
 
@@ -2558,6 +2560,16 @@ Consume a qualified rule</h4>
 		<dd>
 			This is a <a>parse error</a>.
 			Return nothing.
+
+		<dt><<semicolon-token>>
+		<dd>
+			If |mixed with declarations| is true,
+			this is a [=parse error=];
+			return nothing.
+
+			Otherwise,
+			append a <<semicolon-token>>
+			to the qualified rule's prelude.
 
 		<dt><a href="#tokendef-open-curly">&lt;{-token></a>
 		<dd>
@@ -2605,28 +2617,24 @@ Consume a style block's contents</h4>
 			and append the result to |rules|.
 
 		<dt><<ident-token>>
+		<dt><<function-token>>
+		<dt><<function>>
 		<dd>
-			Initialize a temporary list initially filled with the <a>current input token</a>.
+			<a>Reconsume the current input token</a>.
+			Initialize a temporary list, initially empty.
 			As long as the <a>next input token</a> is anything other than a <<semicolon-token>> or <<EOF-token>>,
 			<a>consume a component value</a> and append it to the temporary list.
 			<a>Consume a declaration</a> from the temporary list.
 			If anything was returned,
 			append it to |decls|.
 
-		<dt><<delim-token>> with a value of "&" (U+0026 AMPERSAND)
-		<dd>
-			[=Reconsume the current input token=].
-			[=Consume a qualified rule=].
-			If anything was returned,
-			append it to |rules|.
-
 		<dt>anything else</dd>
 		<dd>
-			This is a <a>parse error</a>.
-			<a>Reconsume the current input token</a>.
-			As long as the <a>next input token</a> is anything other than a <<semicolon-token>> or <<EOF-token>>,
-			<a>consume a component value</a>
-			and throw away the returned value.
+			[=Reconsume the current input token=].
+			[=Consume a qualified rule=],
+			with |mixed with declarations| set to true.
+			If anything was returned,
+			append it to |rules|.
 	</dl>
 
 
@@ -2677,16 +2685,33 @@ Consume a list of declarations</h4>
 <h4 id="consume-declaration">
 Consume a declaration</h4>
 
-	Note: This algorithm assumes that the <a>next input token</a> has already been checked to be an <<ident-token>>.
-
 	To <dfn>consume a declaration</dfn>:
 
-	<a>Consume the next input token</a>.
-	Create a new declaration
-	with its name set to the value of the <a>current input token</a>
-	and its value initially set to an empty [=list=].
-
+	Let |decl| be a new declaration,
+	with an initially empty name
+	and a value set to an empty [=list=].
 	<ol>
+		<li>
+			<a>Consume a component value</a>.
+
+			<dl class=switch>
+				: <<ident-token>>
+				::
+					Set |decl|'s name to the value of the <<ident-token>>.
+
+				: anything else
+				::
+					This is a [=parse error=].
+
+					While the [=next input token=]
+					is anything but a <<semicolon-token>>
+					or <<eof-token>>,
+					[=consume a component value=]
+					and throw it away.
+
+					Return nothing.
+			</dl>
+
 		<li>
 			While the <a>next input token</a> is a <<whitespace-token>>,
 			<a>consume the next input token</a>.
@@ -2705,21 +2730,21 @@ Consume a declaration</h4>
 		<li>
 			As long as the <a>next input token</a> is anything other than an <<EOF-token>>,
 			<a>consume a component value</a>
-			and append it to the declaration's value.
+			and append it to |decl|'s value.
 
 		<li>
 			If the last two non-<<whitespace-token>>s in the declaration's value are
 			a <<delim-token>> with the value "!"
 			followed by an <<ident-token>> with a value that is an <a>ASCII case-insensitive</a> match for "important",
-			remove them from the declaration's value
-			and set the declaration's <var>important</var> flag to true.
+			remove them from |decl|'s value
+			and set |decl|'s <var>important</var> flag to true.
 
 		<li>
-			While the last token in the declaration's value is a <<whitespace-token>>,
+			While the last token in |decl|'s value is a <<whitespace-token>>,
 			[=list/remove=] that token.
 
 		<li>
-			Return the declaration.
+			Return |decl|.
 	</ol>
 
 
@@ -3263,15 +3288,17 @@ The <<urange>> type</h3>
 <h2 id='rule-defs'>
 Defining Grammars for Rules and Other Values</h2>
 
-	The <a href="https://www.w3.org/TR/css3-values/">Values</a> spec defines how to specify a grammar for properties.
-	This section does the same, but for rules.
+	[[css-values-4#value-defs]] defines how to specify a grammar for properties.
+	This section extends those definitions
+	to also allow specifying a grammar for rules.
 
-	Just like in property grammars,
-	the notation <code>&lt;foo></code> refers to the "foo" grammar term,
-	assumed to be defined elsewhere.
-	Substituting the <code>&lt;foo></code> for its definition results in a semantically identical grammar.
+	Non-terminals representing the entire grammar of an [=at-rule=]
+	are written as an @ character followed by the at-rule's name,
+	between <css>&lt;</css> and <css>></css>,
+	e.g. <<@media>> to represent the ''@media'' rule.
 
-	For numeric data types, this type notation can annotate any range restrictions using the bracketed range notation described in the <a href="https://www.w3.org/TR/css3-values/#numeric-ranges">Values</a> spec.
+	The [[css-values-4#numeric-ranges|bracketed range notation]] can be used on
+	any of the numeric token non-terminals.
 
 	Several types of tokens are written literally, without quotes:
 

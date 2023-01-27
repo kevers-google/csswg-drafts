@@ -153,7 +153,7 @@ Internal display model: the 'foo' property {#the-foo-property}
 	And a figure with a caption is done like this:
 
 	<figure>
-		<img src="corner.png" alt="A table with a caption above it; both have margins and the margins between them are collapsed, as is normal for vertical margins.">
+		<img src="images/corner.png" alt="A table with a caption above it; both have margins and the margins between them are collapsed, as is normal for vertical margins.">
 
 		<figcaption>
 			Just a random image.
@@ -216,6 +216,14 @@ For: @some-at-rule
 
 (A required descriptor can use `Initial: n/a</code>.)
 
-<h2 class=no-num id=priv-sec>Privacy and Security Considerations</h2>
+<h2 class=no-num id=privacy>Privacy Considerations</h2>
 
-Issue: Make some considerations about privacy and security.
+Horizontal review wants Security and Privacy sections to be separate.
+
+Suggested text for new specifications:
+
+No new privacy considerations have been reported on this specification.
+
+<h2 class=no-num id=security>Security Considerations</h2>
+
+No new security considerations have been reported on this specification.

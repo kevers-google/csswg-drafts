@@ -28,6 +28,7 @@ Can I Use URL: https://www.w3.org/TR/cssom-view-1/
 
 <pre class='link-defaults'>
 spec:css-ui-4; type:property; text:pointer-events
+spec:css2; type:dfn; text:canvas
 spec:css2; type:dfn; text:viewport
 spec:html; type:dfn;
     text: inert
@@ -98,7 +99,7 @@ An element <var>body</var> (which will be <a>the <code>body</code> element</a>) 
 Note: A <{body}> element that is <a>potentially scrollable</a> might not have a <a>scrolling box</a>.
 For instance, it could have a used value of 'overflow' being ''overflow/auto'' but not have its content overflowing its content area.
 
-A <a>scrolling box</a> of a <a>viewport</a> or element has two <dfn>overflow directions</dfn>, which are the <a>block-end</a> and <a>inline-end</a> directions for that viewport or element.
+A <dfn export>scrolling box</dfn> of a <a>viewport</a> or element has two <dfn>overflow directions</dfn>, which are the <a>block-end</a> and <a>inline-end</a> directions for that viewport or element.
 Note that the initial scroll position might not be aligned with the [=scrolling area origin=]
 depending on the [=content-distribution properties=], see [[css-align-3#overflow-scroll-position]].
 
@@ -265,6 +266,22 @@ The <dfn>ending edges</dfn> of a particular set of edges of a box or element are
  <dd>The top and right edges.
 </dl>
 
+The <dfn>visual viewport</dfn> is a kind of <a>viewport</a> whose <a>scrolling area</a> is another <a>viewport</a>,
+called the <dfn export>layout viewport</dfn>.
+
+In addition to scrolling, the <a>visual viewport</a> may also apply a scale transform to its <a>layout viewport</a>.
+This transform is applied to the <a>canvas</a> of the <a>layout viewport</a> and does not affect its internal coordinate space.
+
+Note: The scale transform of the visual viewport is often referred to as "pinch-zoom". Conceptually, this transform
+changes the size of the CSS <a>reference pixel</a> but changes the size of the layout viewport proportionally so that it
+does not cause reflow of the page's contents.
+
+The magnitude of the scale transform is known as the <a>visual viewport</a>'s <dfn>scale factor</dfn>.
+
+The {{VisualViewport}} object has an <dfn for=visualviewport>associated document</dfn>, which is a {{Document}} object.
+It is the <a for="/">associated document</a> of the owner {{Window}} of {{VisualViewport}}. The <a>layout viewport</a>
+is the owner {{Window}}'s <a>viewport</a>.
+
 For the purpose of the requirements in this specification,
 elements that have a computed value of the 'display' property
 that is ''table-column'' or ''table-column-group''
@@ -293,8 +310,11 @@ Note: This does not apply to e.g. {{matchMedia()}} as the units are explicitly g
 
 <h3 id=zooming>Zooming</h3>
 
-There are two kinds of zoom, <dfn>page zoom</dfn> which affects the size of the initial viewport<!-- XXX ref -->, and <dfn>pinch zoom</dfn> which acts like
+There are two kinds of zoom, <dfn>page zoom</dfn> which affects the size of the initial viewport<!-- XXX ref -->, and the visual viewport <a>scale factor</a> which acts like
 a magnifying glass and does not affect the initial viewport<!-- XXX ref --> or actual viewport<!-- XXX ref -->. [[!CSS-DEVICE-ADAPT]]
+
+Note: The "scale factor" is often referred to as "pinch-zoom"; however, it can be affected through means other than
+pinch-zooming. e.g. The user agent may zooms in on a focused input element to make it legible.
 
 
 <h3 id=web-exposed-screen-information>Web-exposed screen information</h3>
@@ -337,9 +357,17 @@ the following steps must be run:
    'scroll-behavior' property is ''scroll-behavior/smooth''
    <li><var>behavior</var> is <code>smooth</code>
   </ul>
-  ...then perform a <a>smooth scroll</a> of <var>box</var> to <var>position</var>.
-  Otherwise, perform an <a>instant scroll</a> of <var>box</var> to <var>position</var>.
+  ...then perform a <a>smooth scroll</a> of <var>box</var> to <var>position</var>. Once the position has finished updating, emit the <a event>scrollend</a> event.
+  Otherwise, perform an <a>instant scroll</a> of <var>box</var> to <var>position</var>. After an <a>instant scroll</a> emit the <a event>scrollend</a> event.
+
+  Note: <code>behavior: "instant"</code> always performs an <a>instant scroll</a> by this algorithm.
+
+  Note: If the scroll position did not change as a result of the user interaction or programmatic invocation, where no translations were applied as a result, then no <a event>scrollend</a> event fires because no scrolling occured.
+
+  Note: In the case the VisualViewport was scrolled, yielding no translation changes in the document, emit the <a event>scrollend</a> on the VisualViewport just as the <a event>scroll</a> event is emitted for VisualViewport scrolling.
 </ol>
+
+Scroll is <dfn lt="scroll completed">completed</dfn> when the scroll position has no more pending updates or translations and the user has completed their gesture. Scroll position updates include smooth or instant mouse wheel scrolling, keyboard scrolling, scroll-snap events, or other APIs and gestures which cause the scroll position to update and possibly interpolate. User gestures like touch panning or trackpad scrolling aren't complete until pointers or keys have released.
 
 When a user agent is to perform a <dfn export id=concept-smooth-scroll>smooth scroll</dfn> of a <a>scrolling box</a> <var>box</var> to <var>position</var>,
 it must update the scroll position of <var>box</var> in a user-agent-defined fashion over a user-agent-defined amount of time. When the scroll is
@@ -376,7 +404,7 @@ then <var>x</var> must be changed to the value <code>0</code>. [[!WEBIDL]]
 <h2 id=extensions-to-the-window-interface>Extensions to the {{Window}} Interface</h2>
 
 <pre class=idl>
-enum ScrollBehavior { "auto", "smooth" };
+enum ScrollBehavior { "auto", "instant", "smooth" };
 
 dictionary ScrollOptions {
     ScrollBehavior behavior = "auto";
@@ -389,6 +417,7 @@ dictionary ScrollToOptions : ScrollOptions {
 partial interface Window {
     [NewObject] MediaQueryList matchMedia(CSSOMString query);
     [SameObject, Replaceable] readonly attribute Screen screen;
+    [SameObject, Replaceable] readonly attribute VisualViewport? visualViewport;
 
     // browsing context
     undefined moveTo(long x, long y);
@@ -430,7 +459,7 @@ When the <dfn method for=Window caniuse=matchmedia>matchMedia(<var>query</var>)<
  <var>query</var>.
  <li>Return a new {{MediaQueryList}} object,
  with [=this=]'s
- <a>associated <code>Document</code></a>
+ <a for="/">associated <code>Document</code></a>
  as the <a for=MediaQueryList>document</a>,
  with <var>parsed media query list</var> as its associated [=MediaQueryList/media query list=].
 </ol>
@@ -440,6 +469,14 @@ associated with the {{Window}} object.
 
 Note: Accessing {{Window/screen}} through a {{WindowProxy}} object might yield different
 results when the {{Document}} is navigated.
+
+If the <a for="/">associated document</a> is <a>fully active</a>, the <dfn attribute for=Window>visualViewport</dfn>
+attribute must return the {{VisualViewport}} object associated with the {{Window}} object's <a for="/">associated
+document</a>. Otherwise, it must return null.
+
+Note: the VisualViewport object is only returned and useful for a window whose Document is currently being presented. If
+a reference is retained to a VisualViewport whose associated Document is not being currently presented, the values in
+that VisualViewport must not reveal any information about the browsing context.
 
 The <dfn method for=Window>moveTo(<var>x</var>, <var>y</var>)</dfn> method must follow these steps:
 
@@ -583,7 +620,7 @@ attribute must return zero. <!--fingerprint-->
 The <dfn attribute for=Window caniuse=devicepixelratio>devicePixelRatio</dfn> attribute must return the result of the following <dfn export>determine the device pixel ratio</dfn> algorithm:
 
 1. If there is no output device, return 1 and abort these steps.
-1. Let <var>CSS pixel size</var> be the size of a <a lt=px value>CSS pixel</a> at the current <a>page zoom</a> scale factor and at a <a>pinch zoom</a> scale factor of 1.0.
+1. Let <var>CSS pixel size</var> be the size of a <a lt=px value>CSS pixel</a> at the current <a>page zoom</a> and using a <a>scale factor</a> of 1.0.
 1. Let <var>device pixel size</var> be the vertical size of a device pixel of the output device.
 1. Return the result of dividing <var>CSS pixel size</var> by <var>device pixel size</var>.
 
@@ -691,10 +728,9 @@ When asked to <dfn export>evaluate media queries and report changes</dfn> for a 
   <ol>
 
    <li>If <var>target</var>'s <a>matches state</a> has changed since the last time these steps were run,
-   <a>fire an event</a> at <var>target</var>
-   using the {{MediaQueryListEvent}} constructor,
-   with its {{Event/type}} attribute initialized to <a event>change</a>,
-   its {{Event/isTrusted}} attribute initialized to true,
+   <a>fire an event</a> named <a event>change</a> at <var>target</var>
+   using {{MediaQueryListEvent}},
+   with its {{Event/isTrusted}} attribute initialized to true,
    its {{MediaQueryList/media}} attribute initialized to <var>target</var>'s <a>media</a>,
    and its {{MediaQueryListEvent/matches}} attribute initialized to <var>target</var>'s <a>matches state</a>. <!--fingerprint-->
 
@@ -808,7 +844,7 @@ The <dfn attribute for=MediaQueryListEvent>matches</dfn> attribute must return t
  <tbody>
   <tr>
    <td><dfn event for=MediaQueryList>change</dfn>
-   <td>{{Event}}
+   <td>{{MediaQueryListEvent}}
    <td>{{MediaQueryList}}
    <td>Fired at the {{MediaQueryList}} when the <a>matches state</a> changes.
 </table>
@@ -1014,7 +1050,7 @@ dictionary ScrollIntoViewOptions : ScrollOptions {
   ScrollLogicalPosition inline = "nearest";
 };
 
-dictionary IsVisibleOptions {
+dictionary CheckVisibilityOptions {
     boolean checkOpacity = false;
     boolean checkVisibilityCSS = false;
 };
@@ -1023,7 +1059,7 @@ partial interface Element {
   DOMRectList getClientRects();
   [NewObject] DOMRect getBoundingClientRect();
 
-  boolean isVisible(optional IsVisibleOptions options = {});
+  boolean checkVisibility(optional CheckVisibilityOptions options = {});
 
   undefined scrollIntoView(optional (boolean or ScrollIntoViewOptions) arg = {});
   undefined scroll(optional ScrollToOptions options = {});
@@ -1055,16 +1091,22 @@ The <dfn method for=Element>getClientRects()</dfn> method, when invoked, must re
 
 Note: The {{DOMRect}} objects returned by {{Element/getClientRects()}} are not <a spec=html>live</a>.
 
-The <dfn method for=Element caniuse=getboundingclientrect>getBoundingClientRect()</dfn> method, when invoked, must return the result of the following
-algorithm:
+The <dfn method for=Element caniuse=getboundingclientrect>getBoundingClientRect()</dfn> method, when
+invoked on an element <var>element</var>, must return the result of
+<a>getting the bounding box</a> for <var>element</var>.
 
-1. Let <var>list</var> be the result of invoking {{Element/getClientRects()}} on the same element this method was invoked on.
-1. If the <var>list</var> is empty return a {{DOMRect}} object
-    whose {{DOMRect/x}}, {{DOMRect/y}}, {{DOMRect/width}} and {{DOMRect/height}} members are zero.
-1. If all rectangles in <var>list</var> have zero width or height, return the first rectangle in
-    <var>list</var>.
-1. Otherwise, return a {{DOMRect}} object describing the smallest rectangle that includes all
-    of the rectangles in <var>list</var> of which the height or width is not zero.
+<div algorithm>
+To <dfn export for=Element>get the bounding box</dfn> for <var>element</var>,
+run the following steps:
+    1. Let <var>list</var> be the result of invoking {{Element/getClientRects()}} on
+        <var>element</var>.
+    1. If the <var>list</var> is empty return a {{DOMRect}} object whose {{DOMRect/x}},
+        {{DOMRect/y}}, {{DOMRect/width}} and {{DOMRect/height}} members are zero.
+    1. If all rectangles in <var>list</var> have zero width or height, return the first rectangle in
+        <var>list</var>.
+    1. Otherwise, return a {{DOMRect}} object describing the smallest rectangle that includes all
+        of the rectangles in <var>list</var> of which the height or width is not zero.
+</div>
 
 Note: The {{DOMRect}} object returned by {{Element/getBoundingClientRect()}} is not <a spec=html>live</a>.
 
@@ -1079,7 +1121,7 @@ Note: The {{DOMRect}} object returned by {{Element/getBoundingClientRect()}} is 
 </div>
 
 <div algorithm>
-    Note: The {{Element/isVisible()}} method
+    Note: The {{Element/checkVisibility()}} method
     provides a set of simple checks
     for whether an element is potentially "visible".
     It defaults to a very simple and straightforward method
@@ -1087,7 +1129,7 @@ Note: The {{DOMRect}} object returned by {{Element/getBoundingClientRect()}} is 
     but allows for several additional checks to be opted into,
     depending on what precise notion of "visibility" is desired.
 
-    The <dfn method for=Element>isVisible(|options|)</dfn> method
+    The <dfn method for=Element>checkVisibility(|options|)</dfn> method
     must run these steps,
     when called on an element |this|:
 
@@ -1096,12 +1138,12 @@ Note: The {{DOMRect}} object returned by {{Element/getBoundingClientRect()}} is 
     1. If a [=shadow-including ancestor=] of |this|
         has ''content-visibility: hidden'',
         return false.
-    1. If the {{IsVisibleOptions/checkOpacity}} dictionary member of |options|
+    1. If the {{CheckVisibilityOptions/checkOpacity}} dictionary member of |options|
         is true,
         and |this|, or a [=shadow-including ancestor=] of |this|,
         has a computed 'opacity' value of ''0'',
         return false.
-    1. If the {{IsVisibleOptions/checkVisibilityCSS}} dictionary member of |options|
+    1. If the {{CheckVisibilityOptions/checkVisibilityCSS}} dictionary member of |options|
         is true,
         and |this| is <l spec=css-display>[=invisible=]</l>,
         return false.
@@ -1121,7 +1163,7 @@ The <dfn method for=Element caniuse=scrollintoview>scrollIntoView(<var>arg</var>
 1. If the element does not have any associated [=CSS/box=],
     or is not available to user-agent features,
     then return.
-1. <a lt='scroll an element into view'>Scroll the element into view</a>
+1. <a lt='scroll a target into view'>Scroll the element into view</a>
     with <var>behavior</var>, <var>block</var>, and <var>inline</var>.
 1. Optionally perform some other action that brings the element to the user's attention.
 
@@ -1273,19 +1315,19 @@ The <dfn attribute for=Element>clientHeight</dfn> attribute must run these steps
 
 <h3 id=element-scrolling-members>{{Element}} Scrolling Members</h3>
 
-To <dfn>scroll an element into view</dfn> <var>element</var>,
+To <dfn export>scroll a target into view</dfn> <var>target</var>, which is an <a for="/">Element</a> or <a>Range</a>,
 with a scroll behavior <var>behavior</var>,
 a block flow direction position <var>block</var>,
 and an inline base direction position <var>inline</var>,
 means to run these steps for each ancestor element or <a>viewport</a> that establishes
 a <a>scrolling box</a> <var>scrolling box</var>, in order of innermost to outermost <a>scrolling box</a>:
 
-1. If the {{Document}} associated with <var>element</var> is not <a>same origin</a> with the {{Document}} associated with the element or <a>viewport</a> associated with <var>box</var>, terminate these steps.
-1. Let <var>element bounding border box</var> be the box that the return value of invoking {{Element/getBoundingClientRect()}} on <var>element</var> represents.
-1. Let <var>scrolling box edge A</var> be the <a>beginning edge</a> in the <a>block flow direction</a> of <var>scrolling box</var>, and let <var>element edge A</var> be <var>element bounding border box</var>'s edge on the same physical side as that of <var>scrolling box edge A</var>.
-1. Let <var>scrolling box edge B</var> be the <a>ending edge</a> in the <a>block flow direction</a> of <var>scrolling box</var>, and let <var>element edge B</var> be <var>element bounding border box</var>'s edge on the same physical side as that of <var>scrolling box edge B</var>.
-1. Let <var>scrolling box edge C</var> be the <a>beginning edge</a> in the <a>inline base direction</a> of <var>scrolling box</var>, and let <var>element edge C</var> be <var>element bounding border box</var>'s edge on the same physical side as that of <var>scrolling box edge C</var>.
-1. Let <var>scrolling box edge D</var> be the <a>ending edge</a> in the <a>inline base direction</a> of <var>scrolling box</var>, and let <var>element edge D</var> be <var>element bounding border box</var>'s edge on the same physical side as that of <var>scrolling box edge D</var>.
+1. If the {{Document}} associated with <var>target</var> is not <a>same origin</a> with the {{Document}} associated with the element or <a>viewport</a> associated with <var>scrolling box</var>, terminate these steps.
+1. Let <var>target bounding border box</var> be the box represented by the return value of invoking Element's {{Element/getBoundingClientRect()}}, if <var>target</var> is an <a for="/">Element</a>, or Range's {{Range/getBoundingClientRect()}}, if <var>target</var> is a <a>Range</a>.
+1. Let <var>scrolling box edge A</var> be the <a>beginning edge</a> in the <a>block flow direction</a> of <var>scrolling box</var>, and let <var>element edge A</var> be <var>target bounding border box</var>'s edge on the same physical side as that of <var>scrolling box edge A</var>.
+1. Let <var>scrolling box edge B</var> be the <a>ending edge</a> in the <a>block flow direction</a> of <var>scrolling box</var>, and let <var>element edge B</var> be <var>target bounding border box</var>'s edge on the same physical side as that of <var>scrolling box edge B</var>.
+1. Let <var>scrolling box edge C</var> be the <a>beginning edge</a> in the <a>inline base direction</a> of <var>scrolling box</var>, and let <var>element edge C</var> be <var>target bounding border box</var>'s edge on the same physical side as that of <var>scrolling box edge C</var>.
+1. Let <var>scrolling box edge D</var> be the <a>ending edge</a> in the <a>inline base direction</a> of <var>scrolling box</var>, and let <var>element edge D</var> be <var>target bounding border box</var>'s edge on the same physical side as that of <var>scrolling box edge D</var>.
 1. Let <var>element height</var> be the distance between <var>element edge A</var> and <var>element edge B</var>.
 1. Let <var>scrolling box height</var> be the distance between <var>scrolling box edge A</var> and <var>scrolling box edge B</var>.
 1. Let <var>element width</var> be the distance between <var>element edge C</var> and <var>element edge D</var>.
@@ -1294,7 +1336,7 @@ a <a>scrolling box</a> <var>scrolling box</var>, in order of innermost to outerm
 
     1. If <var>block</var> is "<code>start</code>", then align <var>element edge A</var> with <var>scrolling box edge A</var>.
     1. Otherwise, if <var>block</var> is "<code>end</code>", then align <var>element edge B</var> with <var>scrolling box edge B</var>.
-    1. Otherwise, if <var>block</var> is "<code>center</code>", then align the center of <var>element bounding border box</var> with the center of <var>scrolling box</var> in <var>scrolling box</var>'s <a>block flow direction</a>.
+    1. Otherwise, if <var>block</var> is "<code>center</code>", then align the center of <var>target bounding border box</var> with the center of <var>scrolling box</var> in <var>scrolling box</var>'s <a>block flow direction</a>.
     1. Otherwise, <var>block</var> is "<code>nearest</code>":
         <dl class=switch>
             <dt>If <var>element edge A</var> and <var>element edge B</var> are both outside <var>scrolling box edge A</var> and <var>scrolling box edge B</var>
@@ -1310,7 +1352,7 @@ a <a>scrolling box</a> <var>scrolling box</var>, in order of innermost to outerm
         </dl>
     1. If <var>inline</var> is "<code>start</code>", then align <var>element edge C</var> with <var>scrolling box edge C</var>.
     1. Otherwise, if <var>inline</var> is "<code>end</code>", then align <var>element edge D</var> with <var>scrolling box edge D</var>.
-    1. Otherwise, if <var>inline</var> is "<code>center</code>", then align the center of <var>element bounding border box</var> with the center of <var>scrolling box</var> in <var>scrolling box</var>'s <a>inline base direction</a>.
+    1. Otherwise, if <var>inline</var> is "<code>center</code>", then align the center of <var>target bounding border box</var> with the center of <var>scrolling box</var> in <var>scrolling box</var>'s <a>inline base direction</a>.
     1. Otherwise, <var>inline</var> is "<code>nearest</code>":
         <dl class=switch>
             <dt>If <var>element edge C</var> and <var>element edge D</var> are both outside <var>scrolling box edge C</var> and <var>scrolling box edge D</var>
@@ -1637,6 +1679,79 @@ method must run the following steps:
  <li><p class=issue>...
 </ol>
 
+<h2 id=visualViewport>VisualViewport</h2>
+
+<h3 id="the-visualviewport-interface">The {{VisualViewport}} Interface</h3>
+
+<pre class=idl>
+[Exposed=Window]
+interface VisualViewport : EventTarget {
+  readonly attribute double offsetLeft;
+  readonly attribute double offsetTop;
+
+  readonly attribute double pageLeft;
+  readonly attribute double pageTop;
+
+  readonly attribute double width;
+  readonly attribute double height;
+
+  readonly attribute double scale;
+
+  attribute EventHandler onresize;
+  attribute EventHandler onscroll;
+  attribute EventHandler onscrollend;
+};
+</pre>
+
+The <dfn attribute for=VisualViewport>offsetLeft</dfn> attribute must run these steps:
+1. If the <a>visual viewport</a>'s <a for=visualviewport>associated document</a> is not <a>fully active</a>, return 0.
+1. Otherwise, return the offset of the left edge of the <a>visual viewport</a> from the left edge
+    of the <a>layout viewport</a>.
+
+The <dfn attribute for=VisualViewport>offsetTop</dfn> attribute must run these steps:
+1. If the <a>visual viewport</a>'s <a for=visualviewport>associated document</a> is not <a>fully active</a>, return 0.
+1. Otherwise, return the offset of the top edge of the <a>visual viewport</a> from the top edge
+    of the <a>layout viewport</a>.
+
+The <dfn attribute for=VisualViewport>pageLeft</dfn> attribute must run these steps:
+1. If the <a>visual viewport</a>'s <a for=visualviewport>associated document</a> is not <a>fully active</a>, return 0.
+1. Otherwise, return the offset of the left edge of the <a>visual viewport</a> from the left edge
+    of the <a>initial containing block</a> of the <a>layout viewport</a>'s <a for="/">document</a>.
+
+The <dfn attribute for=VisualViewport>pageTop</dfn> attribute must run these steps:
+1. If the <a>visual viewport</a>'s <a for=visualviewport>associated document</a> is not <a>fully active</a>, return 0.
+1. Otherwise, return the offset of the top edge of the <a>visual viewport</a> from the top edge
+    of the <a>initial containing block</a> of the <a>layout viewport</a>'s <a for="/">document</a>.
+
+The <dfn attribute for=VisualViewport>width</dfn> attribute must run these steps:
+1. If the <a>visual viewport</a>'s <a for=visualviewport>associated document</a> is not <a>fully active</a>, return 0.
+1. Otherwise, return the width of the <a>visual viewport</a> excluding the width of any rendered vertical <a>classic
+    scrollbar</a> that is fixed to the visual viewport.
+
+Note: Since this value is returned in CSS pixels, the value will decrease in magnitude if either <a>page zoom</a> or the
+<a>scale factor</a> is increased.
+
+Note: A scrollbar that is fixed to the visual viewport is one that does not change size or location as the visual
+viewport is zoomed and panned. Because this value is in CSS pixels, when excluding the scrollbar width the UA must
+account for how large the scrollbar is as measured in CSS pixels. That is, the amount excluded decreases when zooming in
+and increases when zooming out.
+
+The <dfn attribute for=VisualViewport>height</dfn> attribute must run these steps:
+1. If the <a>visual viewport</a>'s <a for=visualviewport>associated document</a> is not <a>fully active</a>, return 0.
+1. Otherwise, return the height of the <a>visual viewport</a> excluding the height of any rendered horizontal <a>classic
+    scrollbar</a> that is fixed to the visual viewport.
+
+The <dfn attribute for=VisualViewport>scale</dfn> attribute must run these steps:
+1. If the <a>visual viewport</a>'s <a for=visualviewport>associated document</a> is not <a>fully active</a>, return 0
+    and abort these steps.
+1. If there is no output device, return 1 and abort these steps.
+1. Otherwise, return the <a>visual viewport</a>'s <a>scale factor</a>.
+
+<dfn attribute for=VisualViewport>onresize</dfn> is the <a>event handler IDL attribute</a> for the <a event>resize</a> event.
+
+<dfn attribute for=VisualViewport>onscroll</dfn> is the <a>event handler IDL attribute</a> for the <a event>scroll</a> event.
+
+<dfn attribute for=VisualViewport>onscrollend</dfn> is the <a>event handler IDL attribute</a> for the <a event>scrollend</a> event.
 
 <h2 id=events>Events</h2>
 
@@ -1648,11 +1763,14 @@ When asked to <dfn export for=Document>run the resize steps</dfn> for a {{Docume
 
 1. If <var>doc</var>'s <a>viewport</a> has had its width or height changed
     (e.g. as a result of the user resizing the browser window,
-    or changing the <span>page zoom</span> scale factor,
+    or changing <span>page zoom</span>,
     or an <code>iframe</code> element's dimensions are changed)
     since the last time these steps were run,
     <a>fire an event</a> named <a event>resize</a>
     at the {{Window}} object associated with <var>doc</var>.
+1. If the {{VisualViewport}} associated with <var>doc</var> has had its <a attribute for=VisualViewport>scale</a>,
+    <a attribute for=VisualViewport>width</a>, or <a attribute for=VisualViewport>height</a> properties changed since
+    the last time these steps were run, <a>fire an event</a> named <a event>resize</a> at the {{VisualViewport}}.
 
 
 <h3 id=scrolling-events>Scrolling</h3>
@@ -1660,6 +1778,8 @@ When asked to <dfn export for=Document>run the resize steps</dfn> for a {{Docume
 This section integrates with the <a for=/>event loop</a> defined in HTML. [[!HTML]]
 
 Each {{Document}} has an associated list of <dfn for=Document>pending scroll event targets</dfn>, initially empty.
+
+Each {{Document}} has an associated list of <dfn for=Document>pending scrollend event targets</dfn>, initially empty.
 
 Whenever a <a>viewport</a> gets scrolled (whether in response to user interaction or by an API), the user agent must run these steps:
 
@@ -1678,10 +1798,22 @@ When asked to <dfn export for=Document>run the scroll steps</dfn> for a {{Docume
 1. For each item <var>target</var> in <var>doc</var>'s <a>pending scroll event targets</a>,
     in the order they were added to the list, run these substeps:
 
-    1. If <var>target</var> is a {{Document}}, <a>fire an event</a> named <a event>scroll</a> that bubbles at <var>target</var>.
+    1. If <var>target</var> is a {{Document}}, <a>fire an event</a> named <a event>scroll</a> that bubbles at <var>target</var> and <a>fire an event</a>
+        named <a event>scroll</a> at the {{VisualViewport}} that is associated with <var>target</var>.
     1. Otherwise, <a>fire an event</a> named <a event>scroll</a> at <var>target</var>.
 1. Empty <var>doc</var>'s <a>pending scroll event targets</a>.
 
+Whenever scrolling is <a lt="scroll completed">completed</a>, the user agent must run these steps:
+
+1. If scrolling was done on a <a>viewport</a>, let <var>doc</var> be the <a>viewport’s</a> associated {{Document}} and <var>target</var> be the <a>viewport</a>.
+    Otherwise, scrolling is done on an element and let <var>doc</var> be the element's <a>node document</a> and <var>target</var> be the element.
+1. If <var>target</var> is already in <var>doc</var>'s <a>pending scrollend event targets</a>, abort these steps.
+1. Append <var>target</var> to <var>doc</var>'s <a>pending scrollend event targets</a>.
+1. For each item <var>target</var> in <var>doc</var>'s <a>pending scrollend event targets</a>, in the order they were added to the list, run these substeps:
+
+    1. If <var>target</var> is a {{Document}}, <a>fire an event</a> named <a event>scrollend</a> that bubbles at <var>target</var>.
+    1. Otherwise, <a>fire an event</a> named <a event>scrollend</a> at <var>target</var>.
+1. Empty <var>doc</var>'s <a>pending scrollend event targets</a>.
 
 <h3 id=event-summary>Event summary</h3>
 
@@ -1696,20 +1828,22 @@ When asked to <dfn export for=Document>run the scroll steps</dfn> for a {{Docume
    <th>Description
  <tbody>
   <tr>
-   <td><dfn event for=Window>resize</dfn>
+   <td><dfn event for="Window, VisualViewport">resize</dfn>
    <td>{{Event}}
-   <td>{{Window}}
-   <td>Fired at the {{Window}} when the <a>viewport</a> is resized.
+   <td>{{Window}}, {{VisualViewport}}
+   <td>Fired at the {{Window}} when the <a>viewport</a> is resized. Fired at {{VisualViewport}} when the <a>visual viewport</a> is resized
+       or the <a>layout viewport</a> is scaled.
   <tr>
-   <td><dfn event for="Document, Element">scroll</dfn>
+   <td><dfn event for="Document, Element, VisualViewport">scroll</dfn>
    <td>{{Event}}
-   <td>{{Document}}, elements
-   <td>Fired at the {{Document}} or element when the <a>viewport</a> or element is scrolled, respectively.
+   <td>{{Document}}, elements, {{VisualViewport}}
+   <td>Fired at the {{Document}} or element when the <a>viewport</a> or element is scrolled, respectively. Fired at the {{VisualViewport}}
+       when the <a>visual viewport</a> is scrolled.
   <tr>
    <td><dfn event for="Document, Element">scrollend</dfn>
    <td>{{Event}}
    <td>{{Document}}, elements
-   <td>Fired at the {{Document}} or element when the <a>viewport</a> or element has been scrolled, the scroll sequence has ended and any scroll offset changes have been applied.
+   <td>Fired at the {{Document}} or element when scroll is <a lt="scroll completed">completed</a>: the <a>viewport</a> or element has been scrolled, the scroll sequence has ended and any scroll offset changes have been applied.
 </table>
 
 
@@ -1728,8 +1862,12 @@ Changes {#changes}
 This section documents some of the changes between publications of this specification. This section is not exhaustive. Bug fixes and editorial changes are
 generally not listed.
 
+<h3 id='changes-from-2022-07-07' class=no-num>Changes From 07 July 2022</h3>
+* Introduced the {{VisualViewport}} API and related concepts
+* Pinch zoom is now renamed to <a>scale factor</a>
+
 <h3 id='changes-from-2022-06-22' class=no-num>Changes From 22 June 2022</h3>
-* Adam Argyle moved the 'scrollend' event from <a href="https://wicg.github.io/overscroll-scrollend-events/">WICG 'overscroll-scrollend-events'</a> to [[CSSOM-VIEW-1]]
+* Adam Argyle moved the <a event>scrollend</a> event from <a href="https://wicg.github.io/overscroll-scrollend-events/">WICG overscroll-scrollend-events</a> to [[CSSOM-VIEW-1]]
 
 <h3 id='changes-from-2020-10-19' class=no-num>Changes From 19 October 2020</h3>
 * Added the "Security and Privacy Considerations" section
@@ -1766,7 +1904,7 @@ generally not listed.
 <h3 id='changes-from-2011-08-04' class=no-num>Changes From 4 August 2011 To 17 December 2013</h3>
 
 * The specification now handles right-to-left and vertical writing modes.
-* The specification is now aware of <a>page zoom</a> and <a>pinch zoom</a>.
+* The specification is now aware of <a>page zoom</a> and pinch zoom.
 * The 'scroll-behavior' CSS property is introduced and scrolling APIs are extended with a mechanism to control smooth scrolling.
 * The {{Window/moveTo()}}, {{Window/moveBy()}}, {{Window/resizeTo()}} and {{Window/resizeBy()}} methods are now defined.
 * {{Window/innerWidth}} et al now use the WebIDL type {{double}} instead of {{long}}.

@@ -16,7 +16,7 @@ Editor: Lea Verou, Invited Expert, http://lea.verou.me/about, w3cid 52258
 Editor: Adam Argyle, Google, https://nerdy.dev, w3cid 112669
 Abstract: This module extends CSS Color [[css-color-5]] to add contrast calculation.
 Repository: w3c/csswg-drafts
-Inline Github Issues: title
+Inline Github Issues: false
 </pre>
 
 <pre class='ignored-specs'>
@@ -34,8 +34,8 @@ Introduction {#intro}
 
 	<em>This section is not normative.</em>
 
-	This module adds two one function:
-	''color-contrast()''.
+	This module adds a new <<color>> function:
+	''contrast-color()''.
 
 
 
@@ -52,72 +52,64 @@ Introduction {#intro}
 	https://caniuse.com/mdn-css_types_color_color-contrast
 -->
 
-Selecting the most contrasting color: the ''color-contrast()'' function {#colorcontrast}
+Computing a Contrasting Color: the ''contrast-color()'' function {#colorcontrast}
 ========================================================================================
 
-	This function takes, firstly, a single color
-	(typically a background, but not necessarily),
-	secondly, a list of two or more colors,
-	and thirdly, an optional target <a href="https://www.w3.org/TR/WCAG21/#contrast-minimum">luminance contrast</a> [[!WCAG21]].
+	The <dfn>contrast-color()</dfn> [=functional notation=]
+	identifies a sufficiently contrasting color
+	against a specified background or foreground color
+	without requiring manual computation.
 
-	It <a href="#winner">returns</a> the first color in the list
-	to meet or exceed the specified target contrast
-	or, if no target is given,
-	the color in the list with the greatest contrast.
-
-	The single color is separated from the list
-	with the keyword <css>vs</css>
-	and the target contrast, if present, is separated from the list
-	with the keyword <css>to</css>.
+	Its syntax is:
 
 	<pre class='prod'>
-		<dfn>color-contrast()</dfn> = color-contrast( <<color>> vs <<color>>#{2,}  [ to [<<number>> | AA | AA-large | AAA | AAA-large]]? )
+		<<contrast-color()>> = contrast-color(
+		  [ [ <<color>> && [ tbd-fg | tbd-bg ] && <<target-contrast>>? ] |
+		    [ <<color>> && [ tbd-fg | tbd-bg ] && <<target-contrast>>, <<color>># ] ] )
+		<<target-contrast>> = <<wcag2>>
+		<!-- Allow multiple algorithms in the future by using && operator instead of | for <<target-contrast>> additions.
+		See resolution in #7357 -->
 	</pre>
 
-	The keyword <dfn value for="color-contrast()">AA</dfn> is equivalent to ''4.5'',
-	 <dfn value for="color-contrast()">AA-large</dfn> is equivalent to ''3'',
-	 <dfn value for="color-contrast()">AAA</dfn> is equivalent to ''7'', and
-	 <dfn value for="color-contrast()">AAA-large</dfn> is equivalent to ''4.5'' .
 
-<h3 id="luminance-contrast">
-	Calculating luminance and WCAG 2.1 contrast
-</h3>
+	The only mandatory argument is the <dfn lt="contrast base color" local-lt="base color">base color</dfn>
+	against which the contrast is computed.
+	This is typically (but not necessarily) a background color.
 
-	For each color in the list,
-	the CIE Luminance (Y) is calculated,
-	relative to a [=D65 whitepoint=].
+	The optional list of <<color>> values represents
+	the <dfn lt="contrast color candidates" local-lt="color candidates">color candidates</dfn>.
+	If no candidates are provided, the default candidates are used: ''white, black''.
 
-	For each pair of colors,
-	the WCAG 2.1 contrast is calculated:
-	contrast = (Y<sub>l</sub> + 0.05) / (Y<sub>d</sub> + 0.05)
-	where Y<sub>d</sub> is the luminance of the darker color in the pair
-	and Y<sub>l</sub> is the luminance of the lighter color.
-	The factor 0.05 represents the luminance contribution of the viewing flare.
+	The ''tbd-fg'' and ''tbd-bg'' keywords
+	indicate the role of the [=base color=] in calculating the contrast:
+	as text against a list of [=color candidate|candidate=] background colors (<dfn for="contrast-color()" value>text</dfn>)
+	or as a background against a list of [=color candidate|candidate=] text colors.
+	(The effective contrast of a pair of colors depends on their usage.)
 
-	<div class="example">
-		Suppose that the single color was
+	ISSUE(7359): The keywords to specify whether the [=base color=] is a foreground or background are <abbr title="to be decided">TBD</abbr>.
 
-		<pre class="lang-css">color(display-p3 0.38 0.11 0.05)</pre>
+	The <dfn><<target-contrast>></dfn> argument specifies the contrast algorithm(s) to use.
+	If no [=color candidates=] have been provided,
+	<<target-contrast>> may be omitted,
+	in which case a UA-chosen algorithm is used.
 
-		while the first color in the list was
+	Arguments to a <<target-contrast>> [=functional notation=]
+	indicate the <dfn>target contrast level</dfn>.
+	Multiple contrast algorithms with [=target contrast levels=] may be specified,
+	in which case all their requirements are simultaneously applied.
+	A ''contrast-color()'' function specifying multiple algorithms
+	must specify a [=target contrast level=] for each algorithm,
+	and is otherwise [=invalid=].
 
-		<pre class="lang-css">yellow</pre>
+	If the [=target contrast level=] is omitted,
+	the color candidate with the greatest contrast is returned.
+	Otherwise,
+	the returned color is the first color candidate that meets or exceeds that level,
+	defaulting to ''white'' or ''black'' if none qualify.
 
-		The calculation is as follows:
-		* <span class="swatch" style="--color: rgb(41.482% 7.941% 1.375%)"></span> color(display-p3 0.38 0.11 0.05) is <span class="swatch" style="--color: rgb(41.482% 7.941% 1.375%)"></span> color(xyz 0.06191 0.03568 0.00463) so the relative luminance is <b>0.03568</b>
-		* <span class="swatch" style="--color: yellow"></span> yellow is <span class="swatch" style="--color: yellow"></span> rgb(100% 100% 0%) which is <span class="swatch" style="--color: yellow"></span> color(xyz 0.76998 0.92781 0.13853) so the relative luminance is <b>0.92781</b>
-		* the contrast is (0.92781 + 0.05) / (0.03568 + 0.05) = <b>11.4123</b>
-	</div>
 
-<h3 id="winner">
-	Finding the winning color
-</h3>
-
-	It then selects from that list
-	the first color to meet or exceed the target contrast.
-	If no target is specified,
-	it selects the first color with the highest contrast
-	to the single color.
+<h3 id="contrast-color-winner">
+Finding the Winning Color</h3>
 
 <!--
 	<wpt>
@@ -128,80 +120,85 @@ Selecting the most contrasting color: the ''color-contrast()'' function {#colorc
 	</wpt>
 	-->
 
-	<div class="example">
-		<pre class="lang-css">color-contrast(wheat vs tan, sienna, var(--myAccent), #d2691e)</pre>
+<h4 id="contrast-color-target-winner">
+If there is a target contrast</h4>
 
-		The calculation is as follows:
-			* <span class="swatch" style="--color: wheat"></span> wheat (#f5deb3), the background, has relative luminance 0.749
-			* <span class="swatch" style="--color: tan"></span> tan (#d2b48c) has relative luminance 0.482 and contrast ratio <strong>1.501</strong>
-			* <span class="swatch" style="--color: sienna"></span> sienna (#a0522d) has relative luminance 0.137 and contrast ratio <strong>4.273</strong>
+	Candidate colors are tested sequentially,
+	starting with the first color in the list,
+	and ending with an automatically appended ''white, black''.
+	The first color to pass the specified level(s) of contrast
+	against the [=base color=] wins.
 
-		Suppose myAccent has the value <span class="swatch" style="--color: #b22222"></span>  #b22222:
-			* #b22222 has relative luminance 0.107 and contrast ratio <strong>5.081</strong>
-			* <span class="swatch" style="--color: #d2691e"></span> #d2691e has relative luminance 0.305 and contrast ratio <strong>2.249</strong>
-		The highest contrast ratio is <strong>5.081</strong> so var(--myAccent) wins
-
-	</div>
+	If no candidate color passes, then whichever of ''white'' or ''black'' has the highest contrast
+	according to the first specified algorithm wins.
+	If they both have the same contrast, ''white'' wins.
 
 	<!-- live example
 		https://colorjs.io/notebook/?storage=https%3A%2F%2Fgist.github.com%2Fsvgeesus%2Fec249f376fcecbaa8794f75dbfc1dacf
 	-->
 	<div class="example">
-		<pre class="lang-css">color-contrast(wheat vs bisque, darkgoldenrod, olive, sienna, darkgreen, maroon to AA)</pre>
+		<pre class="lang-css">contrast-color(wheat tbd-bg wcag2(aa), bisque, darkgoldenrod, olive, sienna, darkgreen, maroon)</pre>
 
 		The calculation is as follows:
 			* <span class="swatch" style="--color: wheat"></span> wheat (#f5deb3), the background, has relative luminance 0.749
 			* <span class="swatch" style="--color: bisque"></span> bisque (#ffe4c4) has relative luminance 0.807 and contrast ratio <strong>1.073</strong>
 			* <span class="swatch" style="--color: darkgoldenrod"></span> darkgoldenrod (#b8860b) has relative luminance 0.273 and contrast ratio <strong>2.477</strong>
-			* <span class="swatch" style="--color: olive"></span> olive (#808000 ) has relative luminance 0.200 and contrast ratio <strong>3.193</strong>
+			* <span class="swatch" style="--color: olive"></span> olive (#808000) has relative luminance 0.200 and contrast ratio <strong>3.193</strong>
 			* <span class="swatch" style="--color: sienna"></span> sienna (#a0522d) has relative luminance 0.137 and contrast ratio <strong>4.274</strong>
 			* <span class="swatch" style="--color: darkgreen"></span> darkgreen (#006400 ) has relative luminance 0.091 and contrast ratio <strong>5.662</strong>
-			* <span class="swatch" style="--color: maroon"></span> maroon (#800000 ) has relative luminance 0.046 and contrast ratio <strong>8.333</strong>
-
+			* <span class="swatch" style="--color: maroon"></span> maroon (#800000) has relative luminance 0.046 and contrast ratio <strong>8.333</strong>
 
 		The first color in the list which meets the desired contrast ratio of 4.5 is <span class="swatch" style="--color: darkgreen"></span> darkgreen.
-
 	</div>
 
 	<div class="example">
-		<pre class="lang-css">color-contrast(wheat vs bisque, darkgoldenrod, olive, sienna, darkgreen, maroon to 5.8)</pre>
+		<pre class="lang-css">contrast-color(wheat tbd-bg wcag2(5.8), bisque, darkgoldenrod, olive, sienna, darkgreen, maroon)</pre>
 
 		The calculation is as follows:
 			* the relative luminances and contrast ratios are the same as the previous example.
 
 		The first color in the list which meets the desired contrast ratio of 5.8 is <span class="swatch" style="--color: maroon"></span> maroon.
-
 	</div>
 
-	The colors in the list (after the keyword vs) are tested sequentially,
-	from left to right;
-	a color is the temporary winner
-	if it has  the highest contrast of all those tested so far.
-
-	List traversal is terminated once the target contrast has been met or exceeded.
-
-	Once the end of the list is reached, if there is no target contrast,
-	the current temporary winner is the overall winner.
-	Thus, if two colors in the list happen to have the same contrast,
-	the earlier in the list wins
-	because the later one has the same contrast, not higher.
-
-	If there is a target contrast,
-	and the end of the list is reached without meeting that target,
-	either ''white'' or ''black'' is returned,
-	whichever has the higher contrast.
-
 	<div class="example">
-		<pre class="lang-css">color-contrast(wheat vs bisque, darkgoldenrod, olive to AA)</pre>
+		<pre class="lang-css">contrast-color(wheat tbd-bg wcag2(AA), bisque, darkgoldenrod, olive)</pre>
 
 		The calculation is as follows:
 			* the relative luminances and contrast ratios are the same as the previous example.
 
-		No color in the list meets the desired contrast ratio of 4.5,
-		so <span class="swatch" style="--color: black"></span> black
-		is returned as the contrast (15.982)
-		is higher than that of white (1.314).
+		No color in the list meets the desired contrast ratio of 4.5.
+		The contrast of <span class="swatch" style="--color: white"></span> ''white'' against the
+		[=base color=] of <span class="swatch" style="--color: wheat"></span> ''wheat'' is 1.314, which is smaller than 4.5 (AA),
+		and thus does not pass the target contrast.
+		Therefore, <span class="swatch" style="--color: black"></span> ''black'' is returned, which has a contrast of 15.982 > 4.5.
+	</div>
 
+<h4 id="contrast-color-max-winner">
+If no target contrast is specified</h4>
+
+	Candidate colors are tested sequentially,
+	starting with the first color in the list.
+	A color is the <var>temporary winner</var>
+	if it has the highest contrast against the [=base color=] of all those tested so far.
+
+	Once the end of the list is reached, the current <var>temporary winner</var> is the overall winner.
+	Thus, if two colors in the list happen to have the same contrast,
+	the earlier one wins.
+
+	<div class="example">
+		<pre class="lang-css">
+			--myAccent: #b22222;
+			color: contrast-color(wheat tbd-bg wcag2, tan, sienna, var(--myAccent), #d2691e)
+		</pre>
+
+		The calculation is as follows:
+			* <span class="swatch" style="--color: wheat"></span> wheat (#f5deb3), the background, has relative luminance 0.749
+			* <span class="swatch" style="--color: tan"></span> tan (#d2b48c) has relative luminance 0.482 and contrast ratio <strong>1.501</strong>
+			* <span class="swatch" style="--color: sienna"></span> sienna (#a0522d) has relative luminance 0.137 and contrast ratio <strong>4.273</strong>
+			* <span class="swatch" style="--color: #b22222"></span> --myAccent (#b22222) has relative luminance 0.107 and contrast ratio <strong>5.081</strong>
+			* <span class="swatch" style="--color: #d2691e"></span> #d2691e has relative luminance 0.305 and contrast ratio <strong>2.249</strong>
+
+		The highest contrast ratio is <strong>5.081</strong> so ''var(--myAccent)'' wins
 	</div>
 
 	<div class="example">
@@ -209,8 +206,8 @@ Selecting the most contrasting color: the ''color-contrast()'' function {#colorc
 			foo {
 				--bg: hsl(200 50% 80%);
 				--purple-in-hsl: hsl(300 100% 25%);
-				color: color-contrast(var(--bg) vs hsl(200 83% 23%), purple, var(--purple-in-hsl));
-			  }
+				color: contrast-color(var(--bg) tbd-fg wcag2, hsl(200 83% 23%), purple, var(--purple-in-hsl));
+			}
 		</pre>
 
 		The calculation is as follows:
@@ -224,6 +221,80 @@ Selecting the most contrasting color: the ''color-contrast()'' function {#colorc
 		6.08409 is very close to 6.08889).
 		<!-- great example to use in WPT -->
 	</div>
+
+<h3 id="contrast-algorithms">
+	Contrast algorithms
+</h3>
+
+	ISSUE: Currently only [[#luminance-contrast|WCAG 2.1]] is supported,
+	however this algorithm is known to have problems,
+	particularly on dark backgrounds.
+	Future revisions of this module will likely introduce additional contrast algorithms.
+
+<h4 id="luminance-contrast">
+	WCAG 2.1: the ''wcag2'' keyword and ''wcag2()'' function
+</h4>
+
+	The <dfn for="contrast-color()" value>wcag2</dfn> keyword and <dfn for="contrast-color()">wcag2()</dfn> [=functional notations=]
+	indicate use of the [[!WCAG21]] <a href="https://www.w3.org/TR/WCAG21/#contrast-minimum">luminance contrast</a> algorithm.
+	Their syntax is:
+
+	<pre class="prod">
+	  <dfn><<wcag2>></dfn> =  wcag2 | wcag2([<<number>> | [ aa | aaa ] && large? ])
+	</pre>
+
+	Its [=target contrast level=] keywords map as follows:
+	* ''aa'' computes to ''4.5''
+	* ''aa large'' (or ''large aa'') computes to ''3''
+	* ''aaa'' computes to ''7''
+	* ''aaa large'' (or ''large aaa'') computes to ''4.5''
+
+	To find the contrast of a pair of colors,
+	first their CIE Luminance (Y) is calculated relative to a [=D65 whitepoint=].
+	Then the WCAG 2.1 contrast is calculated:
+	contrast = (Y<sub>l</sub> + 0.05) / (Y<sub>d</sub> + 0.05)
+	where Y<sub>d</sub> is the luminance of the darker color in the pair
+	and Y<sub>l</sub> is the luminance of the lighter color.
+	The factor 0.05 represents the luminance contribution of the viewing flare.
+
+	<div class="example">
+		Suppose that the [=base color=] were
+
+		<pre class="lang-css">color(display-p3 0.38 0.11 0.05)</pre>
+
+		while the first [=candidate color=] in the list were
+
+		<pre class="lang-css">yellow</pre>
+
+		The calculation is as follows:
+		* <span class="swatch" style="--color: rgb(41.482% 7.941% 1.375%)"></span> color(display-p3 0.38 0.11 0.05) is <span class="swatch" style="--color: rgb(41.482% 7.941% 1.375%)"></span> color(xyz 0.06191 0.03568 0.00463) so the relative luminance is <b>0.03568</b>
+		* <span class="swatch" style="--color: yellow"></span> yellow is <span class="swatch" style="--color: yellow"></span> rgb(100% 100% 0%) which is <span class="swatch" style="--color: yellow"></span> color(xyz 0.76998 0.92781 0.13853) so the relative luminance is <b>0.92781</b>
+		* the contrast is (0.92781 + 0.05) / (0.03568 + 0.05) = <b>11.4123</b>
+	</div>
+
+<h4 id="contrast-transparency">
+Contrasting Semi-transparent Colors</h4>
+
+	This section applies only to contrast algorithms that require their inputs to be opaque colors.
+
+	When calculating the contrast of a pair of colors:
+
+	1. The background color is first blended over an opaque canvas color
+		using simple alpha compositing (see [[compositing-1#simplealphacompositing]])
+		to find an opaque background color.
+
+		<div class="issue">
+		<a href="https://github.com/w3c/csswg-drafts/issues/7358">#7358</a> Find a good opaque canvas color for this computation.
+		Candidates are:
+		- the foreground color with alpha = 1
+		- the ''canvas'' system color
+		- some other color calculated to minimize the contrast for the algorithm used
+		</div>
+
+	2. The foreground color is then blended over this opaque background color
+		to find an opaque foreground color.
+
+
 
 
 <!--
@@ -239,28 +310,27 @@ Selecting the most contrasting color: the ''color-contrast()'' function {#colorc
 <h2 id='resolving-color-values'>
 	Resolving <<color>> Values</h2>
 
-		<h3 id="resolving-contrast">Resolving ''color-contrast()'' values</h3>
+		<h3 id="resolving-contrast">Resolving ''contrast-color()'' values</h3>
 
 		If all <<color>> parameters resolve
 		to the corresponding colors in their respective color spaces,
 		the computed value is the winning color
 		resolved according to [[css-color-4#resolving-color-values]].
 		Otherwise (if ''currentColor'' was used in the function),
-		the computed  value is the ''color-contrast()'' function
-		with each <<color>> parameter resolved according to [[css-color-4#resolving-color-values]],
-		and the keywords ''AA'', ''AA-large'', ''AAA'', ''AAA-large'' replaced with their corresponding numeric value,
+		the computed  value is the ''contrast-color()'' function
+		with each component [=computed|computed value=],
 		thus preserving inheritance into child elements.
 
 		<div class="example">
 			For example, given the value
 
 			<pre class="lang-css">
-				color-contrast(rgb(179 213 230) vs cadetblue, hsl(200 83% 23%) to AA)
+				contrast-color(rgb(179 213 230) tbd-bg wcag2(AA), cadetblue, hsl(200 83% 23%))
 			</pre>
 
 			the contrast with cadetblue is <strong>1.97</strong>
 			while the contrast with hsl(200 83% 23%) is <strong>6.09</strong>
-			which exceeds 4.5, the value for 'AA';
+			which exceeds 4.5, the value for ''AA'';
 			so it has the computed value of the resolved hsl function:
 
 			<pre class="lang-css">
@@ -276,13 +346,13 @@ Selecting the most contrasting color: the ''color-contrast()'' function {#colorc
 			the value
 
 			<pre class="lang-css">
-				color-contrast(currentColor vs hsl(200 83% 23%), purple to AA)
+				contrast-color(currentColor tbd-bg wcag2(AA), hsl(200 83% 23%), purple)
 			</pre>
 
 			has the computed value
 
 			<pre class="lang-css">
-				color-contrast(currentColor vs rgb(10 75 107), rgb(128 0 128) to 4.5)
+				contrast-color(currentColor tbd-bg wcag2(4.5), rgb(10 75 107), rgb(128 0 128))
 			</pre>
 
 		</div>
@@ -304,55 +374,17 @@ Serialization {#serial}
 This section extends [[css-color-4#serializing-color-values]]
 to add serialization of the
 results of the
-''color-contrast()'' function.
+''contrast-color()'' function.
 
-In this section, the strings used in the specification and the corresponding characters are as follows.
-
-<table class="data">
-	<tr>
-		<th>String</th>
-		<th>Character</th>
-	</tr>
-	<tr>
-		<td>" "</td>
-		<td>U+0020 SPACE</td>
-	</tr>
-	<tr>
-		<td>","</td>
-		<td>U+002C COMMA</td>
-	</tr>
-	<tr>
-		<td>"-"</td>
-		<td>U+002D HYPHEN-MINUS</td>
-	</tr>
-	<tr>
-		<td>"."</td>
-		<td>U+002E FULL STOP</td>
-	</tr>
-	<tr>
-		<td>"/"</td>
-		<td>U+002F SOLIDUS</td>
-	</tr>
-</table>
-
-The string "." shall be used as a decimal separator,
-regardless of locale,
-and there shall be no thousands separator.
-
-As usual,
-if the alpha of the result is exactly 1,
-it is omitted from the serialization;
-an implicit value of 1 (fully opaque) is the default.
-
-Serializing color-contrast() {#serial-color-contrast}
+Serializing contrast-color() {#serial-contrast-color}
 -----------------------------------------------------
 
-The serialization of the result of a ''color-contrast()'' function
-is a <<color>>,
-as defined in [[css-color-4#serializing-color-values]].
-The form used
-is the same as that used to specify
-the winning color.
+The [=specified value=] of the ''contrast-color()'' function
+is serialized with each keyword value as specified
+and each component in canonical order.
+
+The [=resolved value=] of the ''contrast-color()'' function
+is the [=used color=] serialized the same as any other <<color>>.
 
 <!--
 <wpt>
@@ -360,25 +392,7 @@ the winning color.
 </wpt>
 -->
 
-The <em>minimum</em> precision for round-tripping
-is the same as that specified in
-[[css-color-4#serializing-color-values]].
 
-<div class="example">
-	The winner of this contrast choice
-	<pre>color-contrast(wheat vs olive, sienna, maroon)</pre>
-	is maroon,
-	so the result is serialized as
-	<span class="swatch" style="--color: maroon"></span>
-	"rgb(128 0 0)".
-
-	While the winner of
-	<pre>color-contrast(wheat vs color(prophoto-rgb 0.4 0.4 0.2), color(display-p3 0.45 0.08 0.05))</pre>
-	is color(display-p3 0.45 0.08 0.05),
-	so the result is serialized as
-	<span class="swatch" style="--color: rgb(49.277% 0.414% 0.524%)"></span>
-	"color(display-p3 0.45 0.08 0.05)".
-</div>
 
 <!--
  ██████  ████████  ██████  ██     ██ ████████  ████ ████████ ██    ██
@@ -425,7 +439,7 @@ Changes {#changes}
 <h3 id='changes-from-5'>
 	Changes from Colors 5</h3>
 
-		The new ''color-contrast()'' function allows one of a list of colors to be chosen,
+		The new ''contrast-color()'' function allows one of a list of colors to be chosen,
 		based on the WCAG 2.1 contrast with a specified color.
 
 <!--

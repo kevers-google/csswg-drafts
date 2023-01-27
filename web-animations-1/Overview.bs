@@ -83,6 +83,7 @@ Work Status: Refining
 ED: https://drafts.csswg.org/web-animations-1/
 TR: https://www.w3.org/TR/web-animations-1/
 
+Previous version: https://www.w3.org/TR/2021/WD-web-animations-1-20220908/
 Previous version: https://www.w3.org/TR/2021/WD-web-animations-1-20210518/
 Previous version: https://www.w3.org/TR/2018/WD-web-animations-1-20181011/
 Previous version: https://www.w3.org/TR/2016/WD-web-animations-1-20160913/
@@ -482,7 +483,7 @@ model</em>.  The role of these pieces is as follows:
 
 Graphically, this flow can be represented as follows:
 <figure>
-  <img src="img/timing-and-animation-models.svg" width="600"
+  <img src="images/timing-and-animation-models.svg" width="600"
     alt="Overview of the operation of the Web Animations model.">
   <figcaption>
     Overview of the operation of the Web Animations model.<br>
@@ -587,7 +588,7 @@ At each step, time may be shifted backwards and forwards, scaled,
 reversed, paused, and repeated.
 
 <figure>
-  <img src="img/time-hierarchy.svg" width="350"
+  <img src="images/time-hierarchy.svg" width="350"
             alt="A hierarchy of timing nodes">
   <figcaption>
     A hierarchy of timing nodes.
@@ -631,6 +632,13 @@ purpose of synchronization.
 
 At any given moment, a [=timeline=] has a single current [=time value=] known
 simply as the timeline's <dfn export for=timeline>current time</dfn>.
+
+A <a>timeline</a> may not always be able to return a meaningful <a>time
+value</a>, but only an <a>unresolved</a> time value.
+For example, it may be defined relative to a moment that has yet to occur,
+such as the firing of a document's load event.
+A <a>timeline</a> is considered to be <dfn export lt="inactive timeline">inactive</dfn>
+when its <a>time value</a> is <a>unresolved</a>.
 
 A <a>timeline</a> is <dfn export lt="monotonically increasing timeline"
 local-lt="monotonically increasing">monotonically increasing</dfn> if its
@@ -712,21 +720,6 @@ animation model to change, but these operations in themselves do not create
 a new [=animation frame=], rather they merely update the current <a>animation
 frame</a>.
 
-### Timeline Phase ### {#timeline-phases}
-
-A [=timeline=] may be in one of four possible
-<dfn export for=timeline lt="timeline phase|phase">phases</dfn>:
-
-1.  <dfn export for=timeline lt="timeline inactive phase|inactive phase">inactive</dfn>
-1.  <dfn export for=timeline lt="timeline before phase|before phase">before</dfn>
-1.  <dfn export for=timeline lt="timeline active phase|active phase">active</dfn>
-1.  <dfn export for=timeline lt="timeline after phase|after phase">after</dfn>
-
-A [=timeline=] in the [=timeline inactive phase|inactive phase=] can
-also be called an <dfn export>inactive timeline</dfn>
-
-An [=inactive timeline=] has an [=unresolved=] [=timeline/current time=].
-
 ### Document timelines ### {#document-timelines}
 
 A <dfn export>document timeline</dfn> is a type of <a>timeline</a> that is <a
@@ -739,23 +732,15 @@ This fixed offset is referred to as the document timeline's <dfn>origin time</df
 Issue(2079): There must be a better term than "origin time"&mdash;
              it's too similar to "time origin".
 
-
-The [=timeline phase|phase=] of a <a>document timeline</a> at a given moment is
-the [=timeline phase|phase=] corresponding to the <em>first</em> matching
-condition from the following:
-
-<div class="switch">
-
-:   If the associated document is not an [=active document=] or its
-    [=time origin=] has not yet been established
-::  &rarr; [=timeline inactive phase|inactive=]
-:   Otherwise,
-::  &rarr; [=timeline active phase|active=]
-
-</div>
+Prior to establishing the [=time origin=] for its associated document,
+a [=document timeline=] is [=inactive timeline|inactive=].
 
 After a [=document timeline=] becomes [=inactive timeline|active=], it is
 [=monotonically increasing=].
+
+A [=document timeline=] that is associated with a {{Document}} which is not
+an [=active document=] is also considered to be
+[=inactive timeline|inactive=].
 
 To <a lt="timeline time to origin-relative time">convert a timeline
 time, |timeline time|, to an origin-relative time</a> for a document timeline,
@@ -765,7 +750,7 @@ time=]. If |timeline| is inactive, return an [=unresolved=] [=time value=].
 ### The default document timeline ### {#the-documents-default-timeline}
 
 Each {{Document}} has a <a>document timeline</a> called the
-<dfn export>default document timeline</dfn>.
+<dfn export for="document">default document timeline</dfn>.
 The <a>default document timeline</a> is unique to each document and persists for
 the lifetime of the document including calls to <a>document.open()</a> [[!HTML]].
 
@@ -1121,7 +1106,7 @@ previously did not have a pending task, or when the animation is canceled (see
     animation when the <a>Promise object</a> is resolved.
 
     For example, in the following code fragment, the state of the animation
-    will be <a lt="running play state">running</a> when the
+    will be [=play state/running=] when the
     <a>current ready promise</a> is resolved.
     This is because the <code>play</code> operation occurs while a <a>pending
     play task</a> is still queued and hence the <a>current ready promise</a>
@@ -1347,8 +1332,8 @@ The procedure to <dfn>pause an animation</dfn>, <var>animation</var>, is as
 follows:
 
 1.  If <var>animation</var> has a <a>pending pause task</a>, abort these steps.
-1.  If the <a>play state</a> of <var>animation</var> is <a
-    lt="paused play state">paused</a>, abort these steps.
+1.  If the <a>play state</a> of <var>animation</var> is [=play state/paused=],
+    abort these steps.
 1.  Let <var>seek time</var> be a <a>time value</a> that is initially <a>unresolved</a>.
 1.  Let <var>has finite timeline</var> be true if |animation| has an associated
     <a>timeline</a> that is not [=monotonically increasing=].
@@ -1417,10 +1402,10 @@ follows:
         [=playback rate=]</code>.
 
         Note: The <a>hold time</a> might be already set if the animation
-        is <a lt="finished play state">finished</a>, or if the animation
-        has a <a>pending play task</a>.
+        is [=play state/finished=],
+        or if the animation has a <a>pending play task</a>.
         In either case we want to preserve the <a>hold time</a> as we
-        enter the <a lt="paused play state">paused</a> state.
+        enter the [=play state/paused=] state.
 
     1.  [=Apply any pending playback rate=] on |animation|.
 
@@ -1468,7 +1453,7 @@ is said to have <em>finished</em>.
 Graphically, the effect of limiting the current time is shown below.
 
 <figure>
-  <img src="img/limiting.svg" width="500"
+  <img src="images/limiting.svg" width="500"
        alt="The effect of limiting the current time of an animation.">
   <figcaption>
     The effect of limiting the [=animation/current time=] of an <a>animation</a>
@@ -1524,7 +1509,7 @@ until it reaches zero.
 
 A running animation that has reached this boundary (or overshot it) and has a
 <a lt="unresolved">resolved</a> [=start time=]
-is said to be <a lt="finished play state">finished</a>.
+is said to be [=play state/finished=].
 
 The crossing of this boundary is checked on each modification to the
 animation object using the procedure to <a>update an animation's finished
@@ -1614,16 +1599,16 @@ follows:
 1.  Set the <a>previous current time</a> of <var>animation</var> be the
     result of calculating its [=animation/current time=].
 1.  Let <var>current finished state</var> be true if the <a>play
-    state</a> of <var>animation</var> is
-    <a lt="finished play state">finished</a>.
+    state</a> of <var>animation</var> is [=play state/finished=].
     Otherwise, let it be false.
 1.  If <var>current finished state</var> is true and the <a>current finished
     promise</a> is not yet resolved, perform the following steps:
 
     1.  Let <dfn>finish notification steps</dfn> refer to the following
         procedure:
-        1.  If <var>animation</var>'s <a>play state</a> is not equal to <a
-            lt="finished play state">finished</a>, abort these steps.
+        1.  If <var>animation</var>'s <a>play state</a> is not equal to
+            [=play state/finished=],
+            abort these steps.
         1.  <a lt="resolve a promise">Resolve</a> <var>animation</var>'s
             <a>current finished promise</a> object with
             <var>animation</var>.
@@ -1634,7 +1619,7 @@ follows:
         1.  Set |finishEvent|'s {{AnimationPlaybackEvent/currentTime}} attribute
             to the [=animation/current time=] of |animation|.
         1.  Set |finishEvent|'s {{AnimationPlaybackEvent/timelineTime}}
-            attribute to the <a lt="timeline current time">current time</a>
+            attribute to the [=timeline/current time=]
             of the [=timeline=] with which |animation| is associated.
             If |animation| is not associated with a timeline, or the timeline
             is <a lt="inactive timeline">inactive</a>, let
@@ -1669,7 +1654,7 @@ follows:
 
 Typically, notification about the finished state of an animation is
 performed asynchronously. This allows for the animation to temporarily
-enter the <a lt="finished play state">finished state</a> without
+enter the <a>finished play state</a> without
 triggering events to be fired or promises to be resolved.
 
 For example, in the following code fragment, <code>animation</code> temporarily
@@ -1752,8 +1737,8 @@ for <var>animation</var> defined below:
     1.  Let the <a>hold time</a> be <a>unresolved</a>.
 
         <div class="note">Typically the <a>hold time</a> will already be
-        unresolved except in the case when the animation was previously <a
-        lt="idle play state">idle</a>.</div>
+        unresolved except in the case when the animation was previously
+        [=play state/idle=].</div>
 
     1.  Cancel the <a>pending pause task</a>.
 
@@ -1779,7 +1764,7 @@ The procedure to <dfn>cancel an animation</dfn> for <var>animation</var> is
 as follows:
 
 1.  If <var>animation</var>'s <a>play state</a> is <em>not</em>
-    <a lt="idle play state">idle</a>, perform the following steps:
+    [=play state/idle=], perform the following steps:
     1.  Run the procedure to <a>reset an animation's pending tasks</a> on
         <var>animation</var>.
     1.  <a lt="reject a Promise">Reject</a> the <a>current finished promise</a>
@@ -1845,7 +1830,7 @@ The [=playback rate=] is initially 1.
 
 Setting an animation's [=playback rate=]
 to zero effectively pauses the animation (however, the <a>play state</a>
-does not necessarily become <a lt="paused play state">paused</a>).
+does not necessarily become [=play state/paused=]).
 
 #### Setting the playback rate of an animation #### {#setting-the-playback-rate-of-an-animation}
 
@@ -1861,7 +1846,8 @@ is as follows:
 
 1.  Set the [=playback rate=] to <var>new playback rate</var>.
 
-1.  If <var>previous time</var> is <a lt="unresolved">resolved</a>,
+1.  If the <var>animation</var> is associated with a [=monotonically increasing=]
+    [=timeline=] and <var>previous time</var> is <a lt="unresolved">resolved</a>,
     <a>set the current time</a> of <var>animation</var> to
     <var>previous time</var>
 
@@ -1903,7 +1889,7 @@ The procedure to <dfn>seamlessly update the playback rate</dfn> an
     before updating |animation|'s [=effective playback rate=] since,
     in the following logic,
     we want to immediately apply the [=pending playback rate=] of |animation|
-    if it is <em>currently</em> <a lt="finished play state">finished</a>
+    if it is <em>currently</em> [=play state/finished=]
     regardless of whether or not it will still be finished after we
     apply the [=pending playback rate=].
 
@@ -1922,16 +1908,16 @@ The procedure to <dfn>seamlessly update the playback rate</dfn> an
         this case.
 
     :   If |previous play state| is <a lt="idle play state">idle</a>
-        or <a lt="paused play state">paused</a>, or
+        or [=play state/paused=], or
         |animation|'s [=animation/current time=] is [=unresolved=],
 
     ::  [=Apply any pending playback rate=] on |animation|.
 
         Note: the second condition above is required so that if we have a
-        [=running play state|running=] animation with an unresolved current time
+        [=play state/running=] animation with an unresolved current time
         and no pending play task, we do not attempt to play it below.
 
-    :   If |previous play state| is <a lt="finished play state">finished</a>,
+    :   If |previous play state| is [=play state/finished=],
 
     ::  1.  Let the |unconstrained current time| be the result of calculating
             the [=animation/current time=] of |animation|
@@ -1991,25 +1977,25 @@ The procedure to <dfn>reverse an animation</dfn> of <a>animation</a>
 ### Play states ### {#play-states}
 
 An <a>animation</a> may be described as being in one of the following
-<dfn lt="play state">play states</dfn> for each of which, a
-non-normative description is also provided:
+<dfn lt="play state" export for="animation">play states</dfn>
+for each of which, a non-normative description is also provided:
 
 <div class=informative-bg>
 
-:   <a lt="idle play state">idle</a>
+:   [=play state/idle=]
 ::  The [=animation/current time=] of the animation is <a>unresolved</a> and
     the <a>start time</a> of the animation is <a>unresolved</a> and
     there are no pending tasks.
     In this state the animation has no effect.
-:   <a lt="running play state">running</a>
+:   [=play state/running=]
 ::  The animation has a resolved [=animation/current time=] that changes on each
     <a>animation frame</a> (provided the [=playback rate=] is not zero
     and the <a>timeline</a> is [=inactive timeline|active=] and
     [=monotonically increasing=]).
-:   <a lt="paused play state">paused</a>
+:   [=play state/paused=]
 ::  The animation has been suspended and the [=animation/current time=]
     is no longer changing.
-:   <a lt="finished play state">finished</a>
+:   [=play state/finished=]
 ::  The animation has reached the natural boundary of its playback range
     and the [=animation/current time=] is no longer updating.
 
@@ -2029,13 +2015,13 @@ condition from the following:
         <em>and</em>
     *   <var>animation</var> does <em>not</em> have <em>either</em>
         a <a>pending play task</a> <em>or</em> a <a>pending pause task</a>,
-::  &rarr; <dfn lt="idle play state">idle</dfn>
+::  &rarr; <dfn for="play state" local-lt="idle play state" export>idle</dfn>
 :   <em>Either</em> of the following conditions are true:
     *   <var>animation</var> has a <a>pending pause task</a>, <em>or</em>
     *   <em>both</em> the [=start time=] of
         <var>animation</var> is <a>unresolved</a> <em>and</em> it does
         <em>not</em> have a <a>pending play task</a>,
-::  &rarr; <dfn lt="paused play state">paused</dfn>
+::  &rarr; <dfn for="play state" local-lt="paused play state" export>paused</dfn>
 :   For <var>animation</var>, [=animation/current time=] is <a
     lt=unresolved>resolved</a> and <em>either</em> of the following conditions
     are true:
@@ -2044,9 +2030,9 @@ condition from the following:
         <em>or</em>
     *   |animation|'s [=effective playback rate=] &lt; 0 and
         [=animation/current time=] &le; 0,
-::  &rarr; <dfn lt="finished play state">finished</dfn>
+::  &rarr; <dfn for="play state" local-lt="finished play state" export>finished</dfn>
 :   Otherwise,
-::  &rarr; <dfn lt="running play state">running</dfn>
+::  &rarr; <dfn for="play state" local-lt="running play state" export>running</dfn>
 
 </div>
 
@@ -2056,8 +2042,8 @@ Note that the <a>paused play state</a> effectively
 "wins" over the <a>finished play state</a>.
 
 However, an animation that is paused outside of its natural playback range can
-be converted from a <a lt="paused play state">paused</a>
-animation into a <a lt="finished play state">finished</a> animation
+be converted from a [=play state/paused=] animation
+into a [=play state/finished=] animation
 without restarting by setting the [=start time=] such as below:
 
 <div class='example'><pre class='lang-javascript'>
@@ -2083,9 +2069,9 @@ this specification as well as the <a>events from CSS transitions</a>
 Future specifications may extend this set with further types of [=animation
 events=].
 
-Each {{Document}} maintains a <dfn>pending animation event queue</dfn> that
-stores [=animation events=] along with their corresponding event targets and
-<dfn>scheduled event time</dfn>.
+Each {{Document}} maintains a <dfn export>pending animation event queue</dfn>
+that stores [=animation events=] along with their corresponding event targets
+and <dfn>scheduled event time</dfn>.
 The [=scheduled event time=] is a [=time value=] relative to the [=time origin=]
 representing when the event would ideally have been dispatched were animations
 updated at an infinitely high frequency.
@@ -2219,7 +2205,7 @@ The relationship between the [=start time=], <a>start
 delay</a>, and <a>active duration</a> is illustrated below.
 
 <figure>
-  <img src="img/active-interval-examples.svg" width="600"
+  <img src="images/active-interval-examples.svg" width="600"
       alt="Examples of the effect of the start delay on the endpoints
           of the active interval">
   <figcaption>
@@ -2296,7 +2282,7 @@ time</a> it will not be in any phase.
 The different phases are illustrated below.
 
 <figure>
-  <img src="img/animation-effect-phases-and-states.svg" width="700"
+  <img src="images/animation-effect-phases-and-states.svg" width="700"
       alt="An example of the different phases and states used to
           describe an animation effect.">
   <figcaption>
@@ -2399,7 +2385,7 @@ of the following conditions are met:
 
 1.  the <a>animation effect</a> is in the [=animation effect/active phase=], and
 2.  the <a>animation effect</a> is <a>associated with an animation</a> that is not
-    <a lt="finished play state">finished</a>.
+    [=play state/finished=].
 
 An <a>animation effect</a> is <dfn>current</dfn> if <em>any</em>
 of the following conditions are true:
@@ -2410,11 +2396,47 @@ of the following conditions are true:
     the [=animation effect=] is in the [=animation effect/before phase=], or
 *   the [=animation effect=] is [=associated with an animation=] with
     a [=playback rate=] &lt; 0 and
-    the [=animation effect=] is in the [=animation effect/after phase=].
+    the [=animation effect=] is in the [=animation effect/after phase=], or
+*   the [=animation effect=] is [=associated with an animation=] not in the
+    [=play state/idle=] [=play state=] with a non-null associated
+    [=timeline=] that is not [=monotonically increasing=].
 
 An animation effect is <dfn>in effect</dfn> if its <a>active time</a>, as
 calculated according to the procedure in [[#calculating-the-active-time]],
 is <em>not</em> <a>unresolved</a>.
+
+### Relevant animations ### {#relevant-animations-section}
+
+We may define an [=animation=] as being [=relevant=]
+based on the [=animation effect=] [=associated effect|associated=] with it.
+
+An [=animation=] is <dfn for=animation export>relevant</dfn> if:
+
+* Its [=associated effect=] is [=current=] <em>or</em> [=in effect=],
+    <em>and</em>
+* Its [=replace state=] is <em>not</em> [=removed replace state|removed=].
+
+<div algorithm="get relevant animations">
+
+The <dfn export>relevant animations</dfn>
+for an element or pseudo-element, |target|,
+is the set of all [=animations=] that contain at least one [=animation effect=]
+whose [=effect target=] is |target|.
+
+</div>
+
+<div algorithm="get relevant animations for a subtree">
+
+The <dfn export>relevant animations for a subtree</dfn>
+of an element, pseudo-element, [=document=], or [=shadow root=]—|target|—is
+the set of all [=animations=] that contain at least one [=animation effect=]
+whose [=effect target=] is an [=inclusive descendant=]
+(or [=descendant=] if |target| is a [=document=] or [=shadow root=])
+of |target|
+or a [=pseudo-element=] of such a descendant.
+
+</div>
+
 
 Fill behavior {#fill-behavior}
 ----------------------------------------
@@ -2527,7 +2549,7 @@ The effect of each <a>fill mode</a> is as follows:
 Some examples of the these fill modes are illustrated below.
 
 <figure>
-  <img src="img/animation-state-and-fill-behavior.svg" width="600"
+  <img src="images/animation-state-and-fill-behavior.svg" width="600"
     alt="Examples of various fill modes and the states produced.">
   <figcaption>
     Examples of various fill modes and the states produced.<br>
@@ -2589,7 +2611,7 @@ The relationship between the <a>iteration duration</a> and <a>active
 duration</a> is illustrated below.
 
 <figure>
-  <img src="img/iteration-intervals.svg" width="600"
+  <img src="images/iteration-intervals.svg" width="600"
       alt="Comparison of the iteration duration and active time.">
   <figcaption>
     A comparison of the <a>iteration duration</a> and <a>active
@@ -2627,7 +2649,7 @@ The effect of the <a>iteration count</a> and <a>iteration start</a>
 parameters is illustrated below.
 
 <figure>
-  <img src="img/iteration-count-and-start.svg" width="600"
+  <img src="images/iteration-count-and-start.svg" width="600"
     alt="The effect of the iteration count and iteration start parameters">
   <figcaption>
     The effect of the <a>iteration count</a> and <a>iteration start</a>
@@ -2683,7 +2705,7 @@ the programming interface or in markup.
 These time spaces are illustrated below.
 
 <figure>
-  <img src="img/time-spaces.svg" width="600"
+  <img src="images/time-spaces.svg" width="600"
     alt="A comparison of local time, active time, and iteration time.">
   <figcaption>
     A comparison of local time, active time, and iteration time for an
@@ -2729,7 +2751,7 @@ For the sequenced animations, at timeline time 1s, only animation B's
 <a>associated effect</a> will be <a>in play</a>; there is no overlap.
 
 <figure>
-  <img src="img/endpoint-exclusive-timing.svg" width="600"
+  <img src="images/endpoint-exclusive-timing.svg" width="600"
     alt="Illustration of end-point exclusive timing.">
   <figcaption>
     Illustration of end-point exclusive timing. For both repeated and
@@ -2746,7 +2768,7 @@ href="#calculating-the-simple-iteration-progress"
 section></a> and is illustrated below.
 
 <figure>
-  <img src="img/endpoint-exclusive-timing-and-fill.svg" width="600"
+  <img src="images/endpoint-exclusive-timing-and-fill.svg" width="600"
     alt="Effect of iterations and fill on iteration time.">
   <figcaption>
     After one iteration, the <a>iteration progress</a> is 0, but after two
@@ -2774,7 +2796,7 @@ duration</a>.
 This process is illustrated below.
 
 <figure>
-  <img src="img/active-duration-calculation.svg" width="650"
+  <img src="images/active-duration-calculation.svg" width="650"
     alt="Calculation of the active duration.">
   <figcaption>
     Calculation of the <a>active duration</a> is based on
@@ -2793,7 +2815,7 @@ This process is illustrated below.
   <a>transformed progress</a> (<a>iteration progress</a>) is illustrated below.
 </p>
 <figure>
-  <img src="img/time-calculations.svg" width="650"
+  <img src="images/time-calculations.svg" width="650"
     alt="An overview of timing model calculations.">
   <figcaption>
     An overview of timing model calculations.<br>
@@ -3268,18 +3290,22 @@ the <a>animation type</a> is <a>discrete</a>.
 Keyframe effects {#keyframe-effects}
 ----------------------------------------
 
-<dfn lt="keyframe effect">Keyframe effects</dfn> are a kind of [=animation
-effect=] that use the output of the timing model to update CSS properties of
-an element or [=pseudo-element=] (such as `::before` or `::after` [[!select]])
-referred to as the <dfn>effect target</dfn>.
+<dfn lt="keyframe effect">Keyframe effects</dfn> are a kind of
+[=animation effect=] that use the output of the timing model
+to update CSS properties of an element
+or [=pseudo-element=] (such as `::before` or `::after` [[!select]])
+referred to as the <dfn for="keyframe effect" export>effect target</dfn>.
 
-In order for the [=effect target=] to have a well-defined lifecycle,
-it is represented as an {{Element}} known as the <dfn>target element</dfn>
-and a [=pseudo-element=] selector knows as the <dfn>target pseudo-selector</dfn>.
-If the [=effect target=] is an {{Element}}, the [=target element=] is that
-element and the [=target pseudo-selector=] is `null`.
-If the [=effect target=] is a [=pseudo-element=], the [=target element=] is
-its [=originating element=] and the [=target pseudo-selector=] is as required
+The [=effect target=] is comprised of
+an {{Element}} known as the <dfn for="effect target" export>target element</dfn>
+and a [=pseudo-element=] selector known as the
+<dfn for="effect target" export>target pseudo-selector</dfn>.
+If the [=effect target=] is an {{Element}},
+the [=target element=] is that element
+and the [=target pseudo-selector=] is `null`.
+If the [=effect target=] is a [=pseudo-element=],
+the [=target element=] is its [=originating element=]
+and the [=target pseudo-selector=] is as required
 to specify that particular [=pseudo-element=].
 
 Note that not all [=effect targets=] specified in this manner (such as ''::part()''
@@ -3703,7 +3729,7 @@ values specified for the <a>target property</a>.
 The arrangement is illustrated below:
 
 <figure>
-  <img src="img/animation-cascade.svg" width="500"
+  <img src="images/animation-cascade.svg" width="500"
        alt="Overview of the application of effect values to their target properties">
   <figcaption>
     Overview of the application of <a>effect values</a> to
@@ -3940,7 +3966,7 @@ if <em>all</em> of the following conditions are true:
     That is, it is <em>not</em>
     a CSS animation with an [=owning element (animation)|owning element=],
     nor a CSS transition with an [=owning element (transition)|owning element=].
-*   The [=animation=]'s [=play state=] is [=finished play state|finished=].
+*   The [=animation=]'s [=play state=] is [=play state/finished=].
 *   The [=animation=]'s [=replace state=] is <em>not</em>
     [=removed replace state|removed=].
 *   The [=animation=] is associated with a [=monotonically increasing=]
@@ -3981,7 +4007,7 @@ perform the following steps:
      to the [=animation/current time=] of |animation|.
 
 1.   Set |removeEvent|'s {{AnimationPlaybackEvent/timelineTime}}
-     attribute to the <a lt="timeline current time">current time</a>
+     attribute to the [=timeline/current time=]
      of the [=timeline=] with which |animation| is associated.
 
 1.   If |animation| has a [=document for timing=], then append
@@ -3990,7 +4016,7 @@ perform the following steps:
      For the [=scheduled event time=], use the result of
      applying the procedure to convert
      [=timeline time to origin-relative time=] to
-     the [=timeline current time|current time=] of the [=timeline=]
+     the [=timeline/current time=] of the [=timeline=]
      with which |animation| is associated.
 
      Otherwise, [=queue a task=] to [=dispatch=] |removeEvent| at
@@ -4052,18 +4078,15 @@ The <code>AnimationTimeline</code> interface {#the-animationtimeline-interface}
 [Exposed=Window]
 interface AnimationTimeline {
     readonly attribute double? currentTime;
-    readonly attribute TimelinePhase phase;
 };
 </pre>
 
 <div class='attributes'>
 
 :   <dfn attribute for=AnimationTimeline>currentTime</dfn>
-::  Returns the <a lt="timeline current time">current time</a> for this timeline
+::  Returns the [=timeline/current time=] for this timeline
     or <code>null</code> if this timeline is <a lt="inactive
     timeline">inactive</a>.
-:   <dfn attribute for=AnimationTimeline>phase</dfn>
-::  Returns the <a lt="timeline phase">phase</a> for this timeline.
 
 </div>
 
@@ -4148,6 +4171,7 @@ interface Animation : EventTarget {
     undefined updatePlaybackRate(double playbackRate);
     undefined reverse();
     undefined persist();
+    [CEReactions]
     undefined commitStyles();
 };
 </pre>
@@ -4431,21 +4455,6 @@ enum AnimationReplaceState { "active", "removed", "persisted" };
 ::  Corresponds to the [=removed replace state=].
 :   <code>persisted</code>
 ::  Corresponds to the [=persisted replace state=].
-
-### The <code>TimelinePhase</code> enumeration ### {#the-timelinephase-enumeration}
-
-<pre class='idl'>
-enum TimelinePhase { "inactive", "before", "active", "after" };
-</pre>
-
-:   <code>inactive</code>
-::  Corresponds to the [=timeline inactive phase=].
-:   <code>before</code>
-::  Corresponds to the [=timeline before phase=].
-:   <code>active</code>
-::  Corresponds to the [=timeline active phase=].
-:   <code>after</code>
-::  Corresponds to the [=timeline after phase=].
 
 The <code>AnimationEffect</code> interface {#the-animationeffect-interface}
 ----------------------------------------
@@ -5961,24 +5970,10 @@ animation.play();</pre>
 
 :   <dfn method for=Animatable lt="getAnimations(options)">
     sequence&lt;Animation&gt; getAnimations(options)</dfn>
-::  Returns the set of [=relevant=] {{Animation}} objects
-    that contain at least one <a>animation effect</a> whose
-    [=effect target=] is this object, or,
+::  Returns the set of [=relevant animations=] for this object, or,
     if an {{Animatable/getAnimations(options)/options}} parameter
     is passed with {{GetAnimationsOptions/subtree}} set to true,
-    an [=inclusive descendant=] of this object or a [=pseudo-element=]
-    of such a descendant.
-
-    An [=animation=] is
-    <dfn lt="relevant animation" local-lt="relevant">relevant</dfn> if:
-
-    * Its [=associated effect=] is [=current=] <em>or</em> [=in effect=],
-        <em>and</em>
-    * Its [=replace state=] is <em>not</em> [=removed replace state|removed=].
-
-    For the purposes of this method
-    a [=pseudo-element=] is considered to be
-    a [=child=] of its [=originating element=].
+    returns the set of [=relevant animations for a subtree=] for this object.
 
     The returned list is sorted using the composite order described
     for the associated <a>animations</a> of effects in [[#the-effect-stack]].
@@ -6054,10 +6049,8 @@ partial interface mixin DocumentOrShadowRoot {
 
 :   <dfn method for=DocumentOrShadowRoot lt='getAnimations()'>
     sequence&lt;Animation&gt; getAnimations()</dfn>
-::  Returns the set of [=relevant=] {{Animation}} objects
-    that have an associated <a>associated effect</a>
-    whose <a>target element</a> is a <a>descendant</a> of
-    the [=document=] or [=shadow root=]
+::  Returns the set of [=relevant animations for a subtree=]
+    for the [=document=] or [=shadow root=]
     on which this method is called.
 
     The returned list is sorted using the composite order described
@@ -6121,8 +6114,8 @@ dictionary AnimationPlaybackEventInit : EventInit {
 :   <dfn attribute for=AnimationPlaybackEvent>currentTime</dfn>
 ::  The [=animation/current time=] of the [=animation=] that
     generated the event at the moment the event as queued.
-    This will be <code class=esvalue>null</code> if the [=animation=] was <a
-    lt="idle play state">idle</a> at the time the event was generated.
+    This will be <code class=esvalue>null</code> if the [=animation=] was
+    [=play state/idle=] at the time the event was generated.
 :   <dfn attribute for=AnimationPlaybackEvent>timelineTime</dfn>
 ::  The [=time value=] of the [=timeline=] with which the [=animation=] that
     generated the event is associated at the moment the event was queued.
@@ -6226,8 +6219,8 @@ elem.animate([ { opacity: 1 }, { opacity: 0 } ], 500);</pre>
 :   The value returned by the <code>currentTime</code> attribute of
     a <a>document timeline</a> will not change within a task
 
-::  Due to the requirement on <a>timelines</a> to update their <a
-    lt="timeline current time">current time</a> each time the
+::  Due to the requirement on <a>timelines</a> to update
+    their [=timeline/current time=] each time the
     [=update animations and send events=] procedure is run,
     querying the <code>currentTime</code> twice within
     a long block of code that is executed in the same script block
@@ -6383,20 +6376,10 @@ Changes since last publication {#changes-since-last-publication}
 =======================================
 
 The following changes have been made since the <a
-  href="https://www.w3.org/TR/2021/WD-web-animations-1-20210518/">18 May
-2021 Working Draft</a>:
+  href="https://www.w3.org/TR/2022/WD-web-animations-1-20220908/">8 September
+2022 Working Draft</a>:
 
--   Changed the procedure to [=play an animation=] to consistently check
-    the *auto-rewind flag* regardless of the [=effective playback rate=].
-    Previously the flag was not checked when the effective playback rate was
-    zero.
-
--   Changed the procedure to [=play an animation=] to ensure an idle animation
-    is played even when the *auto-rewind flag* is false.
-
--   Changed the procedure to [=seamlessly update the playback rate=] so that it
-    does not attempt to play an animation with a resolved start time but an
-    unresolved current time and no pending play task (i.e. a running animation).
+-   (None as yet)
 
 The <a
   href="https://github.com/w3c/csswg-drafts/commits/main/web-animations-1">changelog</a>

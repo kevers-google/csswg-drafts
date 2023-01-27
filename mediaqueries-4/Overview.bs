@@ -736,7 +736,7 @@ Using “min-” and “max-” Prefixes On Range Features</h4>
 		Any viewport widths that fall between 320px and 321px will result in none of the styles being applied.
 
 		One approach to work around this problem is to increase the precision of the values used for the comparison. Using the example above,
-		changing the second comparison value to 320.01px significantly reduces the change that a viewport width on a device would fall
+		changing the second comparison value to 320.01px significantly reduces the chance that a viewport width on a device would fall
 		between the cracks.
 
 		<pre>
@@ -871,7 +871,7 @@ Syntax</h2>
 	<dfn>&lt;mf-eq></dfn> = '='
 	<dfn>&lt;mf-comparison></dfn> = <<mf-lt>> | <<mf-gt>> | <<mf-eq>>
 
-	<dfn>&lt;general-enclosed></dfn> = [ <<function-token>> <<any-value>>? ) ] | ( <<any-value>>? )
+	<dfn>&lt;general-enclosed></dfn> = [ <<function-token>> <<any-value>>? ) ] | [ ( <<any-value>>? ) ]
 	</pre>
 
 	The <<media-type>> production does not include the keywords ''only'', ''not'', ''and'', ''or'', and ''layer''.
@@ -1023,7 +1023,8 @@ Error Handling</h3>
 		rather than just treating the ''or'' as an unknown <a>media type</a>.
 	</div>
 
-	An unknown <<mf-name>> or <<mf-value>>, or disallowed <<mf-value>>,
+	An unknown <<mf-name>> or <<mf-value>>, or
+	a feature value which does not matches the value syntax for that <a>media feature</a>,
 	results in the value “unknown”.
 	A <<media-query>> whose value is “unknown” must be replaced with ''not all''.
 

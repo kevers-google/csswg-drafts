@@ -953,7 +953,7 @@ Supporting SVG1.1 'writing-mode' values in CSS syntax</h5>
   </table>
 
   <p class="note">The SVG1.1 values were also present
-    in an older of the CSS 'writing-mode' specification,
+    in an older version of the CSS 'writing-mode' specification,
     which is obsoleted by this specification.
     The additional ''tb-lr'' value of that revision
     is replaced by ''vertical-lr''.
@@ -1381,7 +1381,7 @@ Mixed Vertical Orientations</h4>
     When 'text-orientation' is ''mixed'',
     the UA must determine the orientation of each <a>typographic character unit</a>
     by its <code>Vertical_Orientation</code> property:
-    <a href="#typeset-upright">typeseting it upright</a>
+    <a href="#typeset-upright">typesetting it upright</a>
     if its orientation property is <code>U</code>, <code>Tu</code>, or <code>Tr</code>;
     or <a href="#typeset-sideways">typesetting it sideways</a> (90&deg; clockwise from horizontal)
     if its orientation property is <code>R</code>.
@@ -1600,7 +1600,8 @@ Flow-relative Directions</h3>
   </dl>
 
   <p>Where contextually unambiguous or encompassing both meanings,
-    the terms <dfn export for=CSS>start</dfn> and <dfn export for=CSS>end</dfn>
+    the terms <dfn export for=CSS lt="start | startmost">start</dfn>
+    and <dfn export for=CSS lt="end | endmost">end</dfn>
     are used in place of <a>block-start</a>/<a>inline-start</a>
     and <a>block-end</a>/<a>inline-end</a>, respectively.
 
@@ -2541,6 +2542,9 @@ Privacy and Security Considerations {#priv-sec}
       (<a href="https://github.com/w3c/csswg-drafts/issues/3779">Issue 3779</a>)
     <li>Updated “Applies to” line for 'text-combine-upright' to mention text
       (since certain effects like ''display: contents'' can strip the box itself).
+    <li>
+      Clarified that the [=central baseline=] is the [=ideographic central baseline=].
+      (<a href="https://github.com/w3c/csswg-drafts/issues/5177">Issue 5177</a>)
     <li>Reshuffled text in the [[#intro]] and improved cross-linking.
   </ul>
 

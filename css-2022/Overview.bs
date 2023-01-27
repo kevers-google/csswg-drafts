@@ -2,10 +2,13 @@
 Title: CSS Snapshot 2022
 Shortname: css-2022
 Level: none
-Status: ED
+Status: NOTE-FPWD
+Date: 2022-11-22
+Prepare for TR: yes
 Group: CSSWG
 Work Status: revising
 URL: https://drafts.csswg.org/css-2022/
+TR: https://www.w3.org/TR/css-2022/
 Editor: Tab Atkins Jr., Google, http://xanthir.com/, w3cid 42199
 Editor: Elika J. Etemad / fantasai, Invited Expert, http://fantasai.inkedblade.net/contact, w3cid 35400
 Editor: Florian Rivoal, Invited Expert, https://florian.rivoal.net, w3cid 43241
@@ -14,14 +17,15 @@ Abstract: This document collects together into one definition all the specs that
 	The primary audience is CSS implementers, not CSS authors, as this definition
 	includes modules by specification stability, not Web browser adoption rate.
 Status Text:
-	This document is a work in progress,
+	<!-- This document is a work in progress,
 	aimed at representing the state of CSS as of 2022.
-	It should become a Working Group Note when completed.
+	It should become a Working Group Note when completed. -->
 
-	<!-- Replace the above with this when publishing to TR:
+	Replace the above with this when publishing to TR:
 	This document represents the state of CSS as of 2022.
 	The CSS Working Group does not expect any further changes to this document:
-	new snapshots will be published at <a href="https://www.w3.org/TR/CSS/">https://www.w3.org/TR/CSS/</a> as CSS advances. -->
+	new snapshots will be published at 
+	<a href="https://www.w3.org/TR/CSS/">https://www.w3.org/TR/CSS/</a> as CSS advances.
 Boilerplate: index no
 </pre>
 <pre class=link-defaults>
@@ -49,6 +53,55 @@ Introduction {#intro}
 	Since different CSS modules are at different levels of stability,
 	the CSS Working Group has chosen to publish this profile
 	to define the current scope and state of Cascading Style Sheets as of 2022.
+
+<h3 id="css-glossary">
+What is CSS?</h3>
+
+	<dl export>
+		<dt><dfn lt="CSS | Cascading Style Sheets">Cascading Style Sheets (CSS)</dfn>
+		<dd>
+			CSS is a language for writing [=style sheets=],
+			and is designed to describe the rendering of structured documents
+			(such as HTML and XML)
+			on a variety of media.
+			CSS is used to describe the presentation of a [=source document=],
+			and usually does not change the underlying semantics
+			expressed by its [=document language=].
+
+		<dt><dfn>Style sheet</dfn>
+		<dd>
+			A set of rules that specify the presentation of a document.
+			Style sheets are written by an [=Author=],
+			and interpreted by a [=User Agent=],
+			to present the document to the [=User=].
+
+		<dt><dfn>Source document</dfn>
+		<dd>
+			The document to which one or more style sheets apply.
+			A source document’s structure and semantics are encoded
+			using a [=document language=] (e.g., HTML, XHTML, or SVG).
+
+		<dt><dfn>Author</dfn>
+		<dd>
+			An author is a person who writes documents and associated style sheets.
+			An <dfn>authoring tool</dfn> is a [=User Agent=] that generates style sheets.
+
+		<dt><dfn>User</dfn>
+		<dd>
+			A user is a person who interacts with a user agent
+			to view, hear, or otherwise use the document.
+
+		<dt><dfn noexport lt="user agent | UA">User Agent (UA)</dfn>
+		<dd>
+			A user agent is any program that interprets a document
+			and its associated [=style sheets=]
+			on behalf of a [=user=].
+			A [=user agent=] may display a document, read it aloud,
+			cause it to be printed, convert it to another format, etc.
+			For the purposes of the CSS specifications,
+			a [=User Agent=] is one that supports and interprets [=Cascading Style Sheets=]
+			as defined in these specifications.
+	</dl>
 
 <h3 id="w3c-process">
 Background: The W3C Process and CSS</h3>
@@ -121,7 +174,7 @@ Classification of CSS Specifications</h2>
 	can be found at the <a href="http://www.w3.org/Style/CSS/current-work">CSS Current Work page</a>.
 
 
-<h3 id="css">Cascading Style Sheets (CSS) &mdash; The Official Definition</h3>
+<h3 id=css-official>Cascading Style Sheets (CSS) &mdash; The Official Definition</h3>
 
 	This profile includes only specifications that we consider stable
 	<em>and</em> for which we have enough implementation experience that we are sure of that stability.
@@ -202,12 +255,15 @@ Classification of CSS Specifications</h2>
 		<dd>
 			Replaces CSS2&sect;8.1, &sect;8.2, &sect;8.3 (but not &sect;8.3.1), and &sect;8.4.
 
-		<dt><a href="https://www.w3.org/TR/css-color-3/">CSS Color Level 3</a>
-		  [[!CSS-COLOR-3]]
+		<dt><a href="https://www.w3.org/TR/css-color-4/">CSS Color Level 4</a>
+		  [[!CSS-COLOR-4]]
 		<dd>
 			Extends and supersedes CSS2&sect;4.3.6, CSS2&sect;14.1, and CSS2&sect;18.2,
-			introducing an extended range of color values.
-			Also introduces the 'opacity' property.
+			also extends and supersedes [[CSS-COLOR-3]],
+			introducing an extended range of color spaces beyond sRGB,
+			extended color values,
+			and CSS Object Model extensions for color.
+			Also defines the 'opacity' property.
 
 		<dt><a href="https://www.w3.org/TR/css-backgrounds-3/">CSS Backgrounds and Borders Level 3</a>
 		  [[!CSS-BACKGROUNDS-3]]
@@ -307,7 +363,7 @@ Fairly Stable Modules with limited implementation experience</h3>
 	The following modules have completed design work,
 	and are fairly stable,
 	but have not received much testing and implementation experience yet.
-	We hope to incorporate them into the [[#css|official definition of CSS]] in a future snapshot.
+	We hope to incorporate them into the [[#css-official|official definition of CSS]] in a future snapshot.
 
 	<dl>
 		<dt><a href="https://www.w3.org/TR/mediaqueries-4/">Media Queries Level 4</a>
@@ -316,12 +372,6 @@ Fairly Stable Modules with limited implementation experience</h3>
 			Extends and supersedes [[CSS3-MEDIAQUERIES]],
 			expanding the syntax, deprecating most media types,
 			and introducing new media features.
-
-		<dt><a href="https://www.w3.org/TR/css-color-4/">CSS Color Level 4</a>
-		  [[!CSS-COLOR-4]]
-		<dd>
-			Extends and supersedes [[CSS-COLOR-3]],
-			further expanding the range of colors expressible in CSS.
 
 		<dt><a href="https://www.w3.org/TR/css-display-3/">CSS Display Module Level 3</a>
 		  [[CSS-DISPLAY-3]]
@@ -401,7 +451,7 @@ Modules with Rough Interoperability</h3>
 	Although the following modules have been widely deployed with <a>rough interoperability</a>,
 	their details are not fully worked out or sufficiently well-specified
 	and they need more testing and bugfixing.
-	We hope to incorporate them into the [[#css|official definition of CSS]] in a future snapshot.
+	We hope to incorporate them into the [[#css-official|official definition of CSS]] in a future snapshot.
 
 	<dl>
 		<dt><a href="https://www.w3.org/TR/css-transitions-1/">CSS Transitions Level 1</a>

@@ -968,7 +968,7 @@ Limiting Large Grids</h3>
 	Since memory is limited,
 	UAs may clamp the possible size of the <a>implicit grid</a>
 	to be within a UA-defined limit
-	(which should accommodate lines at in the range [-10000, 10000]),
+	(which should accommodate lines in the range [-10000, 10000]),
 	dropping all lines outside that limit.
 	If a grid item is placed outside this limit,
 	its grid area must be <a>clamped</a> to within this limited grid.
@@ -1386,10 +1386,12 @@ Automatic Minimum Size of Grid Items</h3>
 	Note this means that percentages calculated against this size
 	will [=behave as auto=].
 
-	Nonetheless, although this may require an additional layout pass to re-resolve percentages in some cases,
-	this value
-	(like the ''min-content'', ''max-content'', and ''fit-content'' values defined in [[CSS-SIZING-3]])
-	does not prevent the resolution of percentage sizes within the item.
+	For any purpose <em>other than</em> calculating intrinsic sizes,
+	a [=content-based minimum size=]
+	(unlike an explicit ''min-content''/etc [=minimum size=])
+	does not force the box's size to become indefinite.
+	However, if a percentage resolved against the box's size <em>before</em> this minimum was applied,
+	it must be re-resolved against the new size after it is applied.
 
 	<div class="note" id="min-size-opt">
 		Note that while a content-based minimum size is often appropriate,
@@ -1755,8 +1757,9 @@ Syntax of ''repeat()''</h5>
 		* The ''repeat()'' notation can’t be nested.
 		* Automatic repetitions (''auto-fill'' or ''auto-fit'')
 			cannot be combined with
-			<a lt="intrinsic sizing function">intrinsic</a>
-			or <a lt="flexible sizing function">flexible</a> sizes.
+			fully <a lt="intrinsic sizing function">intrinsic</a>
+			or <a lt="flexible sizing function">flexible</a> sizes
+			(see grammar).
 
 	Thus the precise syntax of the ''repeat()'' notation
 	has several forms:
@@ -2351,6 +2354,8 @@ The Implicit Grid</h3>
 	together with the <a>explicit grid properties</a>
 	in a single declaration.
 
+
+
 <!--
    ███    ██     ██ ████████  ███████        ████████ ████████     ███     ██████  ██    ██  ██████
   ██ ██   ██     ██    ██    ██     ██          ██    ██     ██   ██ ██   ██    ██ ██   ██  ██    ██
@@ -2609,11 +2614,17 @@ Grid Definition Shorthand: the 'grid' property</h3>
 	('grid-auto-rows', 'grid-auto-columns', and 'grid-auto-flow'),
 	in a single declaration.
 	(It does not reset the <a>gutter</a> properties.)
+
 	Its syntax matches 'grid-template',
 	plus an additional syntax form
 	for defining auto-flow grids:
 
 	<dl dfn-for=grid dfn-type=value>
+		<dt><<'grid-template'>>
+		<dd>
+			Sets the 'grid-template' longhands as as for 'grid-template',
+			and the 'grid-auto-*' longhands to their initial values.
+
 		<dt><dfn id='grid-s-auto-row'><<'grid-template-rows'>> / [ auto-flow && dense? ] <<'grid-auto-columns'>>?</dfn>
 		<dt><dfn id='grid-s-auto-column'>[ auto-flow && dense? ] <<'grid-auto-rows'>>? / <<'grid-template-columns'>></dfn>
 		<dd>
@@ -2654,6 +2665,11 @@ Grid Definition Shorthand: the 'grid' property</h3>
 			grid-auto-columns: 1fr;
 		</pre>
 	</div>
+
+	When serializing,
+	if all the 'grid-auto-*' longhands have their initial values,
+	the 'grid-template' syntax is used.
+
 
 <!--
 ████████  ██          ███     ██████  ████ ██    ██  ██████
@@ -3783,7 +3799,7 @@ Grid Sizing</h2>
 
 	<ul>
 		<li>A <dfn>fixed sizing function</dfn> (<<length>> or resolvable <<percentage>>).
-		<li>An <dfn>intrinsic sizing function</dfn> (''min-content'', ''max-content'', ''auto'', ''fit-content()'').
+		<li>An <dfn>intrinsic sizing function</dfn> (''min-content'', ''max-content'', ''grid-template-rows/auto'', ''fit-content()'').
 		<li>A <dfn>flexible sizing function</dfn> (<<flex>>).
 	</ul>
 

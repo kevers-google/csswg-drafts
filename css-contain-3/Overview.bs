@@ -4,13 +4,14 @@ Level: 3
 Shortname: css-contain
 Status: ED
 Prepare for TR: no
-Work Status: Exploring
+Work Status: Revising
 Group: csswg
 ED: https://drafts.csswg.org/css-contain-3/
 TR: https://www.w3.org/TR/css-contain-3/
+Previous Version: https://www.w3.org/TR/2021/WD-css-contain-3-20211221/
 Editor: Tab Atkins, Google, http://xanthir.com/contact/, w3cid 42199
 Editor: Florian Rivoal, On behalf of Bloomberg, https://florian.rivoal.net/, w3cid 43241
-Editor: Miriam E. Suzanne, Invited Expert, http://miriamsuzanne.com/contact, w3cid 117151
+Editor: Miriam E. Suzanne, Invited Expert, https://www.miriamsuzanne.com/who/, w3cid 117151
 Abstract: This CSS module describes the 'contain' property, which indicates that the element’s subtree is independent of the rest of the page. This enables heavy optimizations by user agents when used well.
 Test Suite: https://test.csswg.org/harness/results/css-contain-1_dev/
 </pre>
@@ -40,6 +41,7 @@ spec:css-sizing-3; type:property; text:height
 spec:css-sizing-3; type:dfn; text:height
 spec:css-sizing-3; type:dfn; text:size
 spec:css-values-4; type:dfn; text:relative length
+spec:css-values-4; type:dfn; text:identifier
 spec:web-animations-1; type:dfn; text:effect values
 </pre>
 
@@ -171,17 +173,17 @@ Inline-Size Containment</h3>
 
 		<figure style="float: left; margin: 1em 0.5em">
 			<section style="width: 200px; border: solid; display: flow-root;">
-			  <!-- floated elements that impact the available space -->
-			  <div style="float: left; width: 50px; height: 80px; background: blue;"></div>
-			  <div style="float: right; width: 50px; height: 80px; background: blue;"></div>
-			  <div style="float: left; width: 160px; height: 80px; background: navy;"></div>
+				<!-- floated elements that impact the available space -->
+				<div style="float: left; width: 50px; height: 80px; background: blue;"></div>
+				<div style="float: right; width: 50px; height: 80px; background: blue;"></div>
+				<div style="float: left; width: 160px; height: 80px; background: navy;"></div>
 
-			  <!-- parent layout, determining context -->
-			  <article style="border: solid orangered; display: flow-root; min-width: 50px">
-			    <div style="background: orange; aspect-ratio: 1/1;">
-			      Article
-			    </div>
-			  </article>
+				<!-- parent layout, determining context -->
+				<article style="border: solid orangered; display: flow-root; min-width: 50px">
+					<div style="background: orange; aspect-ratio: 1/1;">
+						Article
+					</div>
+				</article>
 			</section>
 		</figure>
 
@@ -199,7 +201,7 @@ Inline-Size Containment</h3>
 		flush with the top of the container,
 		resulting a ''100px'' width,
 		plenty wide enough to accommodate its [=min-content size=].
-		However, due the 'aspect-ratio' of its child,
+		However, due to the 'aspect-ratio' of its child,
 		this would cause the <code>article</code> to be ''100px'' tall as well,
 		which would intersect the third float 80px below,
 		so this layout opportunity is discarded.
@@ -214,17 +216,17 @@ Inline-Size Containment</h3>
 
 		<figure style="float: right; margin: 1em 0.5em">
 			<section style="width: 200px; border: solid; display: flow-root;">
-			  <!-- floated elements that impact the available space -->
-			  <div style="float: left; width: 50px; height: 80px; background: blue;"></div>
-			  <div style="float: right; width: 50px; height: 80px; background: blue;"></div>
-			  <div style="float: left; width: 160px; height: 80px; background: navy;"></div>
+				<!-- floated elements that impact the available space -->
+				<div style="float: left; width: 50px; height: 80px; background: blue;"></div>
+				<div style="float: right; width: 50px; height: 80px; background: blue;"></div>
+				<div style="float: left; width: 160px; height: 80px; background: navy;"></div>
 
-			  <!-- parent layout, determining context -->
-			  <article style="border: solid orangered; display: flow-root;">
-			    <div style="background: orange; aspect-ratio: 1/1;">
-			      Article
-			    </div>
-			  </article>
+				<!-- parent layout, determining context -->
+				<article style="border: solid orangered; display: flow-root;">
+					<div style="background: orange; aspect-ratio: 1/1;">
+						Article
+					</div>
+				</article>
 			</section>
 		</figure>
 
@@ -268,11 +270,14 @@ Container Queries</h2>
 	[=container queries=] allow testing aspects of elements within the document
 	(such as box dimensions or computed styles).
 
-	A [=query container=] is established by specifying
-	the possible query types using the 'container-type' property
+	By default, all elements are [=query containers=]
+	for the purpose of [=container style queries=],
+	and can be established as [=query containers=]
+	for [=container size queries=] by specifying
+	the additional query types using the 'container-type' property
 	(or the 'container' [=shorthand=]).
-	Style rules applying to its <a>shadow-including descendants</a> can then be
-	conditioned by querying against it,
+	Style rules applying to a [=query container=]’s <a>shadow-including descendants</a>
+	can be conditioned by querying against it,
 	using the ''@container'' [=conditional group rule=].
 
 	<div class=example>
@@ -383,19 +388,28 @@ Creating Query Containers: the 'container-type' property</h3>
 
 	<pre class='propdef'>
 		Name: container-type
-		Value: none | style || [ size | inline-size ]
-		Initial: style
+		Value: normal | size | inline-size
+		Initial: normal
 		Inherited: no
 		Applies to: all elements
-		Computed value: the keyword ''container-type/none'' or one or more of ''container-type/size'', ''container-type/inline-size'', ''container-type/style''
+		Computed value: the keyword ''container-type/normal'' or one or more of ''container-type/size'', ''container-type/inline-size''
 		Animation type: not animatable
 	</pre>
 
 	The 'container-type' property establishes the element
-	as a <dfn export>query container</dfn> for the purpose of [=container queries=],
+	as a <dfn export>query container</dfn>
+	for the purpose of [=container queries=] that require explicit containment
+	(such as [=container size queries=]),
 	allowing [=style rules=] styling its descendants
-	to query various aspects of its sizing, layout, and style
+	to query various aspects of its sizing and layout,
 	and respond accordingly.
+
+	Unless otherwise noted,
+	all elements are [=query containers=]
+	for the purpose of [=container queries=]
+	that do not require explicit [=containment=]
+	(such as [=container style queries=]),
+	regardless of the specified 'container-type'.
 
 	Values have the following meanings:
 
@@ -416,12 +430,11 @@ Creating Query Containers: the 'container-type' property</h3>
 			[=style containment=],
 			and [=inline-size containment=]
 			to the [=principal box=].
-		<dt><dfn>style</dfn>
+		<dt><dfn>normal</dfn>
 		<dd>
-			Establishes a [=query container=] for [=container style queries=].
-		<dt><dfn>none</dfn>
-		<dd>
-			The element is not a [=query container=] for any [=container query=].
+			The element is not a [=query container=]
+			for any [=container size queries=],
+			but remains a [=query container=] for [=container style queries=].
 	</dl>
 
 	<div class=example>
@@ -464,8 +477,6 @@ Creating Query Containers: the 'container-type' property</h3>
 		}
 		</pre>
 	</div>
-
-	Issue(7066): Should all elements default to a style container-type?
 
 
 <h3 id="container-name">
@@ -557,7 +568,7 @@ Creating Named Containers: the 'container' shorthand</h3>
 Container Queries: the ''@container'' rule</h3>
 
 	The <dfn at-rule id="at-ruledef-container">@container</dfn> rule
-	is a [=conditional group rule=] whose condition is
+	is a [=conditional group rule=] whose condition contains
 	a <dfn export>container query</dfn>,
 	which is a boolean combination of [=container size queries=] and/or [=container style queries=].
 	Style declarations within the <<stylesheet>> block of an ''@container'' rule
@@ -568,7 +579,7 @@ Container Queries: the ''@container'' rule</h3>
 	The syntax of the ''@container'' rule is:
 
 	<pre class="prod def">
-	@container [ <<container-name>> ]? <<container-condition>> {
+	@container <<container-condition>> {
 	  <<stylesheet>>
 	}
 	</pre>
@@ -576,18 +587,19 @@ Container Queries: the ''@container'' rule</h3>
 	where:
 
 	<pre class="prod def">
+	<dfn><<container-condition>></dfn> = [ <<container-name>> ]? <<container-query>>
 	<dfn><<container-name>></dfn> = <<custom-ident>>
-	<dfn><<container-condition>></dfn> = not <<query-in-parens>>
+	<dfn><<container-query>></dfn>     = not <<query-in-parens>>
 	                      | <<query-in-parens>> [ [ and <<query-in-parens>> ]* | [ or <<query-in-parens>> ]* ]
-	<dfn><<query-in-parens>></dfn>     = ( <<container-condition>> )
+	<dfn><<query-in-parens>></dfn>     = ( <<container-query>> )
 	                      | ( <<size-feature>> )
 	                      | style( <<style-query>> )
 	                      | <<general-enclosed>>
 
-	<dfn><<style-query>></dfn>         = <<style-condition>> | <<style-feature>>
-	<dfn><<style-condition>></dfn>     = not <<style-in-parens>>
+	<dfn><<style-query>></dfn>         = not <<style-in-parens>>
 	                      | <<style-in-parens>> [ [ and <<style-in-parens>> ]* | [ or <<style-in-parens>> ]* ]
-	<dfn><<style-in-parens>></dfn>     = ( <<style-condition>> )
+	                      | <<style-feature>>
+	<dfn><<style-in-parens>></dfn>     = ( <<style-query>> )
 	                      | ( <<style-feature>> )
 	                      | <<general-enclosed>>
 	</pre>
@@ -598,15 +610,15 @@ Container Queries: the ''@container'' rule</h3>
 	For each element,
 	the [=query container=] to be queried
 	is selected from among the element’s ancestor [=query containers=]
-	that have a valid 'container-type'
+	that are established as a valid [=query container=]
 	for all the [=container features=]
-	in the <<container-condition>>.
+	in the <<container-query>>.
 	The optional <<container-name>>
 	filters the set of [=query containers=] considered
 	to just those with a matching [=query container name=].
 
 	Once an eligible [=query container=] has been selected for an element,
-	each [=container feature=] in the <<container-condition>>
+	each [=container feature=] in the <<container-query>>
 	is evaluated against that [=query container=].
 	If no ancestor is an eligible [=query container=],
 	then the [=container query=] is ''unknown'' for that element.
@@ -633,6 +645,26 @@ Container Queries: the ''@container'' rule</h3>
 	Note: Nested [=container queries=] can evaluate in relation to different containers,
 	so it is not always possible to merge the individual <<container-condition>>s
 	into a single query.
+
+	<div class=example>
+		While it is not possible to query multiple containers
+		in a single [=container query=],
+		that can be achieved by nesting multiple queries:
+
+		<pre class=lang-css>
+		@container card (inline-size > 30em) {
+		  @container style(--responsive: true) {
+		    /* styles */
+		  }
+		}
+		</pre>
+
+		The styles above will only be applied
+		if there is an ancestor container named "card"
+		that meets the '@container/inline-size' condition,
+		as well as an ancestor container
+		meeting [=container style query|style=] condition.
+	</div>
 
 	Global, name-defining [=at-rules=]
 	such as ''@keyframes'' or ''@font-face'' or ''@layer''
@@ -730,7 +762,9 @@ Size Container Features</h3>
 	or the [=query container=] does not support [=container size queries=] on the relevant axes,
 	then the result of evaluating the [=size feature=] is unknown.
 
-	[=Relative length=] units in [=container query=] conditions
+	[=Relative length=] units
+	(including [=container query length=] units)
+	in [=container query=] conditions
 	are evaluated based on the the [=computed values=] of the [=query container=].
 
 	Note: This is different from the handling of relative units in [=media queries=].
@@ -972,16 +1006,40 @@ The <code>CSSContainerRule</code> interface</h3>
 	<pre class='idl'>
 	[Exposed=Window]
 	interface CSSContainerRule : CSSConditionRule {
+	    readonly attribute CSSOMString containerName;
+	    readonly attribute CSSOMString containerQuery;
 	};
 	</pre>
 
 	<dl class='idl-attributes'>
 		<dt><code>conditionText</code> of type <code>CSSOMString</code> (CSSContainerRule-specific definition for attribute on CSSConditionRule)
 		<dd>The <code>conditionText</code> attribute (defined on the <code>CSSConditionRule</code> parent rule),
-			on getting, must return the condition that was specified,
+			on getting, must return a value as follows:
+
+			<dl class="switch">
+				<dt data-md>The ''@container'' rule has an associated <<container-name>>
+				<dd data-md>The result of getting the <code>containerName</code> and
+					<code>containerQuery</code> attributes, joined by a single whitespace.
+				<dt data-md>Otherwise
+				<dd data-md>The result of getting the <code>containerQuery</code> attribute.
+			</dl>
+
+		<dt><code>containerName</code> of type <code>CSSOMString</code>
+		<dd>The <code>containerName</code> attribute, on getting, must return a value as follows:
+
+			<dl class="switch">
+				<dt data-md>The ''@container'' rule has an associated <<container-name>>
+				<dd data-md>The result of serializing that <<container-name>>.
+				<dt data-md>Otherwise
+				<dd data-md>An empty string.
+			</dl>
+
+		<dt><code>containerQuery</code> of type <code>CSSOMString</code>
+		<dd>The <code>containerQuery</code> attribute,
+			on getting, must return the <<container-query>> that was specified,
 			without any logical simplifications,
-			so that the returned condition will evaluate to the same result
-			as the specified condition
+			so that the returned query will evaluate to the same result
+			as the specified query
 			in any conformant implementation of this specification
 			(including implementations that implement future extensions
 			allowed by the <<general-enclosed>> extensibility mechanism in this specification).
@@ -992,8 +1050,6 @@ The <code>CSSContainerRule</code> interface</h3>
 			but logical simplifications (such as removal of unneeded parentheses,
 			or simplification based on evaluating results) are not allowed.
 	</dl>
-
-	Issue(7033): Add CSSOM API for CSSContainerRule
 
 	Issue(6205): Container Queries should have a <code>matchContainer</code> method.
 	This will be modeled on {{matchMedia()}} and the {{MediaQueryList}} interface,
@@ -1006,10 +1062,15 @@ Suppressing An Element’s Contents Entirely: the 'content-visibility' property 
 
 	Issue: [[css-contain-2#content-visibility]]
 
-Privacy and Security Considerations {#priv-sec}
-==============================================
+Privacy Considerations {#privacy}
+=================================
 
-	Issue: [[css-contain-2#priv-sec]]
+	Issue: [[css-contain-2#privacy]]
+
+Security Considerations {#security}
+===================================
+
+	Issue: [[css-contain-2#security]]
 
 <!--
 ████████ ████████  ██████
@@ -1025,6 +1086,18 @@ Privacy and Security Considerations {#priv-sec}
 
 This appendix is <em>informative</em>.
 
+<h3 id="changes-2022-08">
+Changes since the 18 August 2022 Working Draft</h3>
+
+	Significant changes since the <a href="https://www.w3.org/TR/2022/WD-css-contain-3-20220818/">18 August 2022 Working Draft</a> include:
+
+	* Add the {{CSSContainerRule/containerName}} and
+		{{CSSContainerRule/containerQuery}} attributes.
+		(<a href="https://github.com/w3c/csswg-drafts/issues/7033">Issue 7033</a>)
+	* Correct typo in 'container-type' syntax, to clarify that ''normal'' cannot
+		be combined with other values.
+		(<a href="https://github.com/w3c/csswg-drafts/issues/7669">Issue 7669</a>)
+
 <h3 id="changes-2021-12">
 Changes since the 21 December 2021 First Public Working Draft</h3>
 
@@ -1039,8 +1112,11 @@ Changes since the 21 December 2021 First Public Working Draft</h3>
 	* [=Cascade-dependent keywords=] are not allowed as values in a
 		[=style feature=], and cause the [=container style query=] to be false.
 		(<a href="https://github.com/w3c/csswg-drafts/issues/7080">Issue 7080</a>)
-	* Change the initial value of 'container-type' to be ''style''.
-		(<a href="https://github.com/w3c/csswg-drafts/issues/6393">Issue 6393</a>)
+	* Change the initial value of 'container-type' to be ''normal'',
+		which establishes elements as containers for [=style features=].
+		(<a href="https://github.com/w3c/csswg-drafts/issues/6393">Issue 6393</a>,
+		<a href="https://github.com/w3c/csswg-drafts/issues/7066">Issue 7066</a>,
+		<a href="https://github.com/w3c/csswg-drafts/issues/7402">Issue 7402</a>)
 	* Remove the block-size value from 'container-type',
 		since single-axis block-size containment is not currently possible.
 		(<a href="https://github.com/w3c/csswg-drafts/issues/1031">Issue 1031</a>)
