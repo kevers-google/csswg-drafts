@@ -1,6 +1,6 @@
 <pre class='metadata'>
 Title: CSS Positioned Layout Module Level 3
-Status: WD
+Status: ED
 Work Status: Refining
 Shortname: css-position
 Level: 3
@@ -317,22 +317,21 @@ Containing Blocks of Positioned Boxes</h3>
 					(for example, see [[CSS-GRID-1#abspos-items]]).
 
 				<dt>If the ancestor is an [=inline box=],
+					using the [=writing mode=] of that box,
 				<dd>
-					the [=containing block=] is formed by
-					the [=block-start=] and [=inline-start=] [=content edges=] of the first [=box fragment=] of the ancestor,
-					and the [=block-end=] and [=inline-end=] [=content edges=] of the last [=box fragment=] of the ancestor.
+					the [=containing block=] is formed by forming a rectangle from
+					the [=start=]-most [=content edges=] (in both axes) of the first [=box fragment=] of the ancestor,
+					and the [=end=]-most [=content edges=] of the [=end=]-most [=box fragment=](s) of the ancestor in each axis.
 					If there are multiple fragments on the same line
 					(e.g. due to [[css-writing-modes-3#bidi-box-model|bidi reordering]]),
-					take the [=start=]most/[=end=]most fragment
-					as the first/last fragment.
+					take the [=start=]-most fragment
+					as the first fragment.
 
-					However, since a [=containing block=] cannot have negative area:
-					if the [=block-end=] edge would be [=start=]wards of the [=block-start=] edge,
-					then the [=block-end=] edge of the [=containing block=]
-					instead uses the [=block-start=] edge;
-					and analogously for the [=inline axis=].
-					(Thus the [=containing block=] will have zero height and/or width as a result.)
+					ISSUE(8284): What is a useful containing block to form
+					when the box is fragmented across multiple lines?
 
+					Note: The [=containing block=] formed by a fragmented [=inline box=]
+					was undefined in [[CSS2]].
 			</dl>
 
 			If no ancestor establishes one,
@@ -458,6 +457,8 @@ Painting Order and Stacking Contexts</h3>
 		except that their [=positioned=] descendants and any would-be child [=stacking contexts=]
 		take part in the current [=stacking context=].
 
+	Note: The [=root element=] always forms a [=stacking context=] regardless.
+
 	See <a href="https://www.w3.org/TR/CSS2/visuren.html#layers">CSS2 &sect; 9.9 
 	Layered presentation</a>
 	and <a href="https://www.w3.org/TR/CSS2/zindex.html">Appendix E: 
@@ -491,6 +492,7 @@ Box Insets: the 'top', 'right', 'bottom', 'left', 'inset-block-start', 'inset-in
 	Initial: auto
 	Applies to: positioned elements
 	Inherited: no
+	Logical property group: inset
 	Percentages: refer to size of <a>containing block</a>; see prose
 	Computed value: the keyword ''top/auto'' or a computed <<length-percentage>> value
 	Animation type: by computed value type
@@ -731,6 +733,7 @@ Absolute (and Fixed) Positioning</h3>
 	the [=inset properties=] effectively reduce the [=containing block=]
 	into which it is sized and positioned
 	by the specified amounts.
+	The resulting rectangle is called the <dfn>inset-modified containing block</dfn>.
 
 	If only one [=inset property=] in a given axis is ''top/auto'',
 	it is set to zero.
@@ -783,7 +786,7 @@ Absolute (and Fixed) Positioning</h3>
 	(where [=end=] is interpreted relative to the [=writing mode=] of the [=containing block=]).
 
 	Note: Sizing and positioning of the [=absolutely positioned box=]
-	into this <dfn>inset-modified containing block</dfn>
+	into this [=inset-modified containing block=]
 	is as described in [[#abspos-layout]].
 
 	If its [=self-alignment property=] in an axis is ''align-self/normal'',
@@ -852,7 +855,7 @@ Resolving Automatic Insets: the “Static-Position Rectangle”</h4>
 			See the <a href="https://www.w3.org/TR/css-grid-1/#static-position">static position of a grid container child</a> in [[!CSS-GRID-1]].
 	</dl>
 
-	Finding the [=static position=] and the [=static position rectangle=]
+	Finding the [=static position=] and the [=static-position rectangle=]
 	assumes that both 'float' and 'clear' (as well as 'position')
 	have their [=initial values=],
 	and can consequently require assuming a different hypothetical value
@@ -965,9 +968,12 @@ Automatic Sizes of Absolutely-Positioned Boxes</h3>
 
 	The [=automatic minimum size=] of an absolutely-positioned box is always zero.
 
-	Note: To the extent that form controls can be resized,
+	Note: To the extent that form controls can be resized
+	(and are not directly representing [=replaced elements=] such as images),
 	they are expected to be treated as [=non-replaced=] here.
-	In HTML, all form controls are treated as [=non-replaced=].
+	In HTML, all form controls
+	other than <code>&lt;input type=image></code>
+	are treated as [=non-replaced=].
 
 <h3 id="abspos-margins">
 Auto Margins of Absolutely-Positioned Boxes</h3>
@@ -1718,10 +1724,50 @@ Acknowledgments</h2>
 <h2 class="no-num" id="changes">Changes</h2>
 
 	The following significant changes were made since the
+	<a href="https://www.w3.org/TR/2023/WD-css-position-3-20230217/">17 February 2023 Working Draft</a>:
+	<ul>
+		<li>Updated the [[#def-cb|containing block formed by inline boxes fragmented across multiple lines]]
+			to use the endmost edge of all the fragments in each axis;
+			this proposed definition is still under discussion, however.
+			(<a href="https://github.com/w3c/csswg-drafts/issues/8284">Issue 8284</a>)
+	</ul>
+
+	The following significant changes were made since the
+	<a href="https://www.w3.org/TR/2022/WD-css-position-3-20220901/">01 September 2022 Working Draft</a>:
+	<ul>
+		<li>Added [[#stacking]] and defined [=sticky-positioned boxes=]
+			to always form a [=stacking context=].
+			(<a href="https://github.com/w3c/csswg-drafts/issues/1053">Issue 1053</a>)
+		<li>Updated [=sticky positioning=] to using its offsetted positioning
+			for scroll operations.
+			(<a href="https://github.com/w3c/csswg-drafts/issues/7930">Issue 7930</a>)
+		<li>Fixed incorrect/ambiguous translation from CSS2
+			regarding the edges of a fragmented inline box forming a [=containing block=]
+			in the presence of bidi.
+			(<a href="https://github.com/w3c/csswg-drafts/issues/7917">Issue 7917</a>)
+		<li>Defined the [=containing block=] formed by edges of a fragmented inline box
+			to match the Blink implementation
+			(<a href="https://github.com/w3c/csswg-drafts/issues/609">Issue 609</a>)
+			while opening up a discussion on what’s the best thing to do
+			(<a href="https://github.com/w3c/csswg-drafts/issues/8284">Issue 8284</a>)
+		<li>Imported the definition of [=static-position containing block=] from CSS2.
+		<li>Clarified [=writing modes=] used to calculate [=static positions=].
+			(<a href="https://github.com/w3c/csswg-drafts/issues/7599">Issue 7599</a>,
+			 <a href="https://github.com/w3c/csswg-drafts/issues/7612">Issue 7612</a>)
+		<li>Added a note about treating HTML form controls as [=non-replaced=] elements
+			for the purpose of [=absolute positioning=].
+			(<a href="https://github.com/w3c/csswg-drafts/issues/6789">Issue 6789</a>)
+		<li>Corrected duplicate, conflicting “Animation type” lines for 'position'.
+			(<a href="https://github.com/w3c/csswg-drafts/issues/6846">Issue 6846</a>)
+		<li>Clarified “equivalent alignment”.
+			(<a href="https://github.com/w3c/csswg-drafts/issues/6607">Issue 6607</a>)
+	</ul>
+
+	The following significant changes were made since the
 	<a href="https://www.w3.org/TR/2021/WD-css-position-3-20211216/">16 Decemer 2021 Working Draft</a>:
 
 	<ul>
-		<li>Fixed conceptual definitions of [=static position=] and [=static position rectangle=]
+		<li>Fixed conceptual definitions of [=static position=] and [=static-position rectangle=]
 			to be consistent with their actual usage.
 		<li>Explicitly defined that [=absolute positioning=] forces the box
 			to establish an [=independent formatting context=]

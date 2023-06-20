@@ -1,8 +1,6 @@
 <pre class='metadata'>
 Title: CSS Images Module Level 4
 Status: WD
-Date: 2023-01-12
-Prepare for TR: yes
 Work Status: Exploring
 Shortname: css-images
 Level: 4
@@ -18,7 +16,7 @@ Abstract: This module contains the features of CSS level 4 relating to the <<ima
 
 Issue Tracking: Tracker http://www.w3.org/Style/CSS/Tracker/products/27
 Previous Version: https://www.w3.org/TR/2017/WD-css-images-4-20170413/
-Ignored Terms: <offset>, background positioning area, border image area, <meetorslice>, <ending-shape>, Map, <image>, invalid image, invalid images, concrete object size, linear-gradient(), radial-gradient(), default object size, CSS
+Ignored Terms: <offset>, background positioning area, border image area, <meetorslice>, Map, <image>, invalid image, invalid images, concrete object size, linear-gradient(), radial-gradient(), default object size, CSS
 Ignored Vars: H, P
 Include Can I Use Panels: yes
 Default Highlight: css
@@ -142,7 +140,7 @@ Fetching External Images {#fetching-images}
 -------------------------------------------
 
 	To <dfn>fetch an external image for a stylesheet</dfn>,
-	given a [=/url=] |url| and {{CSSStyleSheet}} sheet,
+	given a <<url>> |url| and {{CSSStyleSheet}} sheet,
 	[=fetch a style resource=] given |url|,
 	with stylesheet {{CSSStyleSheet}},
 	destination "image",
@@ -249,6 +247,8 @@ Resolution/Type Negotiation: the ''image-set()'' notation {#image-set-notation}
 		that specify an unknown or unsupported MIME type in their ''type()'' value.
 	2. Second, remove any <<image-set-option>>s from the list
 		that have the same <<resolution>> as a previous option in the list.
+	3. If there are no <<image-set-option>> left at this point,
+		the function represents an [=invalid image=].
 	3. Finally, among the remaining <<image-set-option>>s,
 		make a UA-specific choice of which to load,
 		based on whatever criteria deemed relevant
@@ -1197,10 +1197,9 @@ Linear Gradients: the ''linear-gradient()'' notation {#linear-gradients}
 	See [[css-color-4#interpolation]].
 
 	<pre class=prod>
-		<dfn>linear-gradient()</dfn> = linear-gradient(
-			[ <<angle>> | to <<side-or-corner>> ]? || <<color-interpolation-method>>,
+		<dfn>&lt;linear-gradient-syntax></dfn> =
+			[ [ <<angle>> | to <<side-or-corner>> ] || <<color-interpolation-method>> ]? ,
 			<<color-stop-list>>
-		)
 		<dfn>&lt;side-or-corner></dfn> = [left | right] || [top | bottom]
 	</pre>
 
@@ -1343,10 +1342,9 @@ Radial Gradients: the ''radial-gradient()'' notation {#radial-gradients}
 	See [[css-color-4#interpolation]].
 
 	<pre class=prod>
-		<dfn>radial-gradient()</dfn> = radial-gradient(
-		  [[ <<ending-shape>> || <<size>> ]? [ at <<position>> ]? ] || <<color-interpolation-method>>,
-		  <<color-stop-list>>
-		)
+		<dfn>&lt;radial-gradient-syntax></dfn> =
+			[ [ [ <<rg-ending-shape>> || <<rg-size>> ]? [ at <<position>> ]? ] || <<color-interpolation-method>>]? ,
+		  	<<color-stop-list>>
 	</pre>
 
 <div class="example">
@@ -1422,10 +1420,10 @@ Conic Gradients: the ''conic-gradient()'' notation</h3>
 	The syntax for a conic gradient is:
 
 	<pre class='prod'>
-		<dfn>conic-gradient()</dfn> = conic-gradient(
-			[ [ from <<angle>> ]? [ at <<position>> ]? ] || <<color-interpolation-method>>,
+		<dfn>conic-gradient()</dfn> = conic-gradient( [ <<conic-gradient-syntax>> ] )
+		<dfn>&lt;conic-gradient-syntax></dfn> =
+			[ [ [ from <<angle>> ]? [ at <<position>> ]? ] || <<color-interpolation-method>> ]? ,
 			<<angular-color-stop-list>>
-		)
 	</pre>
 
 	The arguments are defined as follows:
@@ -1582,6 +1580,12 @@ Repeating Gradients: the ''repeating-linear-gradient()'', ''repeating-radial-gra
 	These notations take the same values
 	and are interpreted the same
 	as their respective non-repeating siblings defined previously.
+
+	<pre class=prod>
+		<<repeating-conic-gradient()>> = repeating-conic-gradient( [ <<conic-gradient-syntax>> ] )
+		<<repeating-linear-gradient()>> = repeating-linear-gradient( [ <<linear-gradient-syntax>> ] )
+		<<repeating-radial-gradient()>> = repeating-radial-gradient( [ <<radial-gradient-syntax>> ] )
+	</pre>
 
 	<div class=example>
 		Basic repeating conic gradient:
@@ -2389,7 +2393,7 @@ Interpolating <<gradient>> {#interpolating-gradients}
 
 			* Otherwise, the size must be changed to a pair of <<length>>s
 				that would produce an equivalent ending-shape.
-				If the <<ending-shape>> was specified as <a value spec=css-images-3>circle</a>,
+				If the <<rg-ending-shape>> was specified as <a value spec=css-images-3>circle</a>,
 				change it to ''ellipse''.
 
 	2. Interpolate each component and color-stop of the gradients independently.
@@ -2420,7 +2424,8 @@ Interpolating ''stripes()'' {#interpolating-stripes}
 
 	1. Both the starting and ending image must have the same number of <<color-stripe>>s.
 
-	2. Neither image uses a combination of <<length>>, <<percentage>>, and <<flex>> stripes.
+	2. Each pair of interpolated thicknesses must be of the same type,
+		i.e. both must either be of type <<length-percentage>>, or <<flex>>.
 
 	If the two images satisfy both constraints,
 	they must be interpolated as described below.
@@ -2440,8 +2445,8 @@ Interpolating ''stripes()'' {#interpolating-stripes}
 		first match each stripe in the start image
 		to the corresponding stripe at the same index in the end image.
 		Then, for each pair of stripes,
-		interpolate the <a href="https://www.w3.org/TR/css3-transitions/#animtype-length">thickness</a>
-		and <a href="https://www.w3.org/TR/css3-transitions/#animtype-color">color</a> independently.
+		interpolate the thickness
+		and color independently.
 
 <!--
  ██████  ████████ ████████  ████    ███    ██       ████ ████████    ███    ████████ ████  ███████  ██    ██
