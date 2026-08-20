@@ -574,8 +574,8 @@ small-caption | status-bar | inherit</td>
 <td>'font-family'</td>
 <td><em title="MUST In The RFC 2119 Context" class="RFC2119">MUST</em><a href="#table_note_1">*</a></td>
 <td><em title="MUST In The RFC 2119 Context" class="RFC2119">MUST</em><a href="#table_note_1">*</a></td>
-<td>[[ &lt;family-name&gt; | &lt;generic-family&gt; ],]* [ 
-&lt;family-name&gt; | &lt;generic-family&gt; ] | inherit</td>
+<td>[[ &lt;font-family-name&gt; | &lt;generic-font-family&gt; ],]* [ 
+&lt;font-family-name&gt; | &lt;generic-font-family&gt; ] | inherit</td>
 <td>depends on user agent</td></tr>
 <tr class="yes">
 <td>'font-size'</td>
@@ -1134,9 +1134,9 @@ HR              { border: 1px inset }
 </div>
 </li>
 
-<li>The lower case letters of the content of the <code>abbr</code> and <code>acronym</code> elements should be rendered as scaled capital
+<li>The lowercase letters of the content of the <code>abbr</code> and <code>acronym</code> elements should be rendered as scaled capital
 letters, at approximately 75% of their size at the current font size. Upper case letters will be unchanged. Printers may 
-also choose to simply render lower case letters as upper case letters without scaling.
+also choose to simply render lowercase letters as uppercase letters without scaling.
 
 <div class="editorial">
 <!-- Editorial Annotation -->
